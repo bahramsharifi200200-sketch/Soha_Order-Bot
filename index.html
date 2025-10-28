@@ -1,304 +1,125 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>فرم ثبت سفارش محصولات طبیعی نوره سها</title>
-  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600&display=swap" rel="stylesheet" />
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>فرم ثبت سفارش سُها</title>
   <style>
     body {
-      font-family: "Vazirmatn", sans-serif;
-      background: linear-gradient(180deg, #f8fff9, #fff);
+      font-family: sans-serif;
+      background: #f6f8fa;
+      color: #333;
       margin: 0;
       padding: 0;
-      display: flex;
-      justify-content: center;
-      align-items: start;
-      min-height: 100vh;
-      color: #222;
+      direction: rtl;
+      text-align: right;
     }
-    .card {
-      width: 95%;
-      max-width: 480px;
+    .container {
+      max-width: 600px;
       background: #fff;
-      border-radius: 18px;
-      padding: 22px;
-      margin-top: 20px;
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.06);
+      margin: 50px auto;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
-
-    .welcome {
+    h1 {
       text-align: center;
+      color: #0070f3;
       font-size: 22px;
-      font-weight: 700;
-      color: #0b8a5f;
-      background: linear-gradient(90deg, #00c853, #b2ff59);
-      padding: 10px 15px;
-      border-radius: 12px;
-      margin-bottom: 25px;
     }
-
-    .poem {
-      text-align: center;
-      font-size: 14px;
-      font-style: italic;
-      color: #666;
-      border-bottom: 1px solid #0b8a5f;
-      border-top: 1px solid #0b8a5f;
-      padding: 10px 0;
-      margin-bottom: 25px;
-      letter-spacing: 1px;
-    }
-
-    .lead {
-      text-align: center;
-      font-size: 15px;
-      font-weight: 700;
-      color: #0b8a5f;
-      margin-top: 0;
-      margin-bottom: 18px;
-      line-height: 1.5;
-    }
-
     label {
       display: block;
-      font-size: 14px;
-      margin-bottom: 6px;
-      color: #333;
-    }
-
-    input,
-    textarea,
-    select {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      font-size: 14px;
-      margin-bottom: 12px;
-    }
-
-    .product {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      margin-bottom: 10px;
-    }
-
-    .product span {
-      font-weight: 600;
-    }
-
-    .prod-row {
-      display: flex;
-      gap: 8px;
-    }
-
-    .prod-row input {
-      flex: 1;
-    }
-
-    .prod-row select {
-      width: 120px;
-    }
-
-    button {
-      width: 100%;
-      background: #0b8a5f;
-      color: #fff;
-      border: none;
-      border-radius: 12px;
-      padding: 12px;
-      font-size: 15px;
-      cursor: pointer;
-      transition: 0.3s;
-    }
-
-    button:hover {
-      background: #087a55;
-    }
-
-    .status {
-      text-align: center;
-      font-size: 14px;
       margin-top: 10px;
+      font-weight: bold;
     }
-
-    footer {
-      text-align: center;
-      font-size: 13px;
-      color: #777;
+    input, textarea, select {
+      width: 100%;
+      margin-top: 6px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    button {
+      background: #0070f3;
+      color: white;
+      padding: 12px;
+      border: none;
+      width: 100%;
+      border-radius: 10px;
+      margin-top: 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0055aa;
+    }
+    .success {
+      background: #e8f9ee;
+      border-right: 4px solid #00b300;
+      padding: 10px;
       margin-top: 15px;
-    }
-
-    footer a {
-      text-decoration: none;
-      color: #0b8a5f;
-    }
-
-    @media (max-width: 500px) {
-      .prod-row {
-        flex-direction: column;
-      }
-      .prod-row select {
-        width: 100%;
-      }
+      display: none;
     }
   </style>
 </head>
-
 <body>
-  <div class="card">
-    <p class="welcome">به فرم ثبت سفارش محصولات طبیعی نوره سها خوش آمدید 💁</p>
 
-    <p class="poem">
-      جز توکل بر خدا سرمایه‌ای در کار نیست<br />
-      هر که را باشد توکل کار او دشوار نیست
-    </p>
-
-    <p class="lead">لطفاً اطلاعات خود و جزئیات سفارش را با دقت وارد کنید</p>
+  <div class="container">
+    <h1>🛍️ فرم ثبت سفارش سُها</h1>
 
     <form id="orderForm">
-      <label>👤 نام و نام خانوادگی</label>
-      <input type="text" name="name" required />
+      <label>نام و نام خانوادگی</label>
+      <input type="text" id="name" required>
 
-      <label>📱 شماره تماس</label>
-      <input type="tel" name="phone" required placeholder="09xxxxxxxxx" />
+      <label>شماره تماس</label>
+      <input type="tel" id="phone" required>
 
-      <label>🏠 آدرس کامل</label>
-      <textarea name="address" rows="2" required></textarea>
+      <label>محصولات درخواستی</label>
+      <textarea id="products" rows="3" placeholder="مثلاً: کرم آبرسان، شامپو ..." required></textarea>
 
-      <label>📨 کد پستی (اختیاری)</label>
-      <input type="text" name="postal_code" placeholder="در صورت نیاز وارد کنید" />
+      <label>توضیحات (اختیاری)</label>
+      <textarea id="notes" rows="2" placeholder="اگر توضیح خاصی دارید..."></textarea>
 
-      <h3 style="margin-top: 18px; font-size: 16px">🍵 محصولات طبیعی نوره سها</h3>
-
-      <div class="product">
-        <span>🟢 سها ۵۰۰ گرمی سبز</span>
-        <div class="prod-row">
-          <input type="number" name="saha500_qty" min="0" placeholder="تعداد" />
-          <select name="saha500_unit">
-            <option value="کارتن">کارتن</option>
-            <option value="بسته">بسته</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="product">
-        <span>🟡 سها ۲۵۰ گرمی ساشه</span>
-        <div class="prod-row">
-          <input type="number" name="saha250_qty" min="0" placeholder="تعداد" />
-          <select name="saha250_unit">
-            <option value="کارتن">کارتن</option>
-            <option value="بسته">بسته</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="product">
-        <span>📦 باکس پوچ یک کیلویی</span>
-        <div class="prod-row">
-          <input type="number" name="box1kg_qty" min="0" placeholder="تعداد" />
-          <select name="box1kg_unit">
-            <option value="کارتن">کارتن</option>
-            <option value="بسته">بسته</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="product">
-        <span>✨ پاکت طلایی پنجره‌دار</span>
-        <div class="prod-row">
-          <input type="number" name="goldPack_qty" min="0" placeholder="تعداد" />
-          <select name="goldPack_unit">
-            <option value="کارتن">کارتن</option>
-            <option value="بسته">بسته</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="product">
-        <span>🤍 پاکت یک کیلویی ساده</span>
-        <div class="prod-row">
-          <input type="number" name="plainPack_qty" min="0" placeholder="تعداد" />
-          <select name="plainPack_unit">
-            <option value="کارتن">کارتن</option>
-            <option value="بسته">بسته</option>
-          </select>
-        </div>
-      </div>
-
-      <label>📝 توضیحات (اختیاری)</label>
-      <textarea name="note" rows="2" placeholder="مثلاً ارسال فوری یا زمان تحویل..."></textarea>
-
-      <button type="submit">📦 ثبت و ارسال سفارش</button>
-      <div id="status" class="status"></div>
+      <button type="submit">📦 ثبت سفارش</button>
     </form>
 
-    <footer>
-      <a href="https://wa.me/989037122660" target="_blank">📞 تماس با پشتیبانی واتساپ</a>
-    </footer>
+    <div class="success" id="successMessage">
+      ✅ سفارش شما با موفقیت ثبت شد.
+      <br>لطفاً منتظر تأیید باشید.
+    </div>
   </div>
 
-  
   <script>
-    const form = document.getElementById("orderForm");
-    const statusBox = document.getElementById("status");
+    const form = document.getElementById('orderForm');
+    const successMessage = document.getElementById('successMessage');
 
-    // مشخصات ربات تلگرام
-    const BOT_TOKEN = "8323862686:AAHm7MuZqblq63H_aelj737kplJ_ZQKVo_8";
-    const CHAT_ID = "-4818657828";
-
-    form.addEventListener("submit", async (e) => {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      statusBox.textContent = "در حال ارسال سفارش... ⏳";
 
-      const data = Object.fromEntries(new FormData(form));
-
-      const message = `
-📦 سفارش جدید ثبت شد:
-
-👤 نام: ${data.name}
-📱 تلفن: ${data.phone}
-🏠 آدرس: ${data.address}
-📨 کد پستی: ${data.postal_code || "—"}
-
-🍵 محصولات:
-🟢 سها ۵۰۰ سبز: ${data.saha500_qty || 0} ${data.saha500_unit}
-🟡 سها ۲۵۰ ساشه: ${data.saha250_qty || 0} ${data.saha250_unit}
-📦 باکس ۱ کیلویی: ${data.box1kg_qty || 0} ${data.box1kg_unit}
-✨ پاکت طلایی: ${data.goldPack_qty || 0} ${data.goldPack_unit}
-🤍 پاکت ساده: ${data.plainPack_qty || 0} ${data.plainPack_unit}
-
-📝 توضیحات: ${data.note || "ندارد"}
-      `;
+      const data = {
+        name: document.getElementById('name').value.trim(),
+        phone: document.getElementById('phone').value.trim(),
+        products: document.getElementById('products').value.trim(),
+        notes: document.getElementById('notes').value.trim()
+      };
 
       try {
-        const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
-        const res = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: CHAT_ID,
-            text: message,
-            parse_mode: "HTML"
-          })
+        const res = await fetch('/api/order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
         });
 
-        const json = await res.json();
-
-        if (json.ok) {
-          statusBox.style.color = "green";
-          statusBox.textContent = "✅ سفارش شما با موفقیت ثبت و ارسال شد!";
+        if (res.ok) {
           form.reset();
+          successMessage.style.display = 'block';
         } else {
-          statusBox.style.color = "orange";
-          statusBox.textContent = "⚠️ خطا در ارسال به تلگرام. لطفاً دوباره تلاش کنید.";
+          alert('❌ خطا در ارسال سفارش، لطفاً دوباره تلاش کنید.');
         }
       } catch (err) {
-        statusBox.style.color = "red";
-        statusBox.textContent = "❌ ارتباط با تلگرام برقرار نشد.";
+        alert('🚫 خطای ارتباط با سرور');
+        console.error(err);
       }
     });
   </script>
