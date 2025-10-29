@@ -4,10 +4,10 @@ const ExcelJS = require('exceljs');
 const Database = require('better-sqlite3');
 const TelegramBot = require('node-telegram-bot-api');
 const path = require('path');
-const moment = require('moment-jalaali'); // 📅 تاریخ شمسی
 
 const app = express();
 
+// 🧩 پشتیبانی از هر دو نوع نام متغیر (BOT_TOKEN یا TELEGRAM_BOT_TOKEN)
 const BOT_TOKEN = process.env.BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
 const CHAT_ID = process.env.CHAT_ID || process.env.TELEGRAM_CHAT_ID;
 
@@ -18,7 +18,7 @@ if (!BOT_TOKEN || !CHAT_ID) {
 
 const bot = new TelegramBot(BOT_TOKEN, { polling: false });
 
-// دیتابیس SQLite (در حافظه‌ی Vercel /tmp/)
+// دیتابیس SQLite (در محیط سرورهای serverless موقت است)
 const db = new Database(path.join('/tmp', 'orders.db'));
 db.exec(`
 CREATE TABLE IF NOT EXISTS orders (
@@ -34,42 +34,48 @@ CREATE TABLE IF NOT EXISTS orders (
 );
 `);
 
+// توابع کمکی
 function formatOrderCode(num) {
   return 'ORD-' + String(num).padStart(6, '0');
 }
 
 function createOrder(data) {
   const created_at = new Date().toISOString();
-  const insert = db.prepare(`
+  const insertTemp = db.prepare(`
     INSERT INTO orders (order_code, name, phone, address, postal_code, products_json, notes, created_at)
     VALUES (NULL, @name, @phone, @address, @postal_code, @products_json, @notes, @created_at)
   `);
-  const info = insert.run(data);
+  const info = insertTemp.run({
+    name: data.name,
+    phone: data.phone,
+    address: data.address,
+    postal_code: data.postal_code || '',
+    products_json: data.products_json,
+    notes: data.notes || '',
+    created_at
+  });
+
   const id = info.lastInsertRowid;
   const order_code = formatOrderCode(id);
   db.prepare(`UPDATE orders SET order_code = ? WHERE id = ?`).run(order_code, id);
-  return db.prepare(`SELECT * FROM orders WHERE id = ?`).get(id);
+  const row = db.prepare(`SELECT * FROM orders WHERE id = ?`).get(id);
+  return row;
 }
 
 async function generateExcelBuffer(order) {
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet('Order');
 
-  sheet.columns = [
-    { header: 'فیلد', key: 'field', width: 25 },
-    { header: 'مقدار', key: 'value', width: 45 }
-  ];
-
-  sheet.addRow({ field: 'کد سفارش', value: order.order_code });
-  sheet.addRow({ field: 'زمان ثبت (میلادی)', value: order.created_at });
-  sheet.addRow({ field: 'نام و نام خانوادگی', value: order.name });
-  sheet.addRow({ field: 'شماره تماس', value: order.phone });
-  sheet.addRow({ field: 'آدرس', value: order.address });
-  sheet.addRow({ field: 'کد پستی', value: order.postal_code || '—' });
-  sheet.addRow({ field: 'توضیحات', value: order.notes || '—' });
-  sheet.addRow({});
-  sheet.addRow({ field: 'محصولات سفارش‌شده:', value: '' });
-  sheet.addRow({ field: 'تعداد', value: 'محصول' });
+  sheet.addRow(['Order Code', order.order_code]);
+  sheet.addRow(['Created At', order.created_at]);
+  sheet.addRow([]);
+  sheet.addRow(['Name', order.name]);
+  sheet.addRow(['Phone', order.phone]);
+  sheet.addRow(['Address', order.address]);
+  sheet.addRow(['Postal Code', order.postal_code || '']);
+  sheet.addRow([]);
+  sheet.addRow(['Products']);
+  sheet.addRow(['Qty', 'Unit', 'Product Name']);
 
   let products = [];
   try {
@@ -81,27 +87,19 @@ async function generateExcelBuffer(order) {
 
   products.forEach(p => {
     if (Number(p.quantity) > 0) {
-      sheet.addRow({ field: `${p.quantity} ${p.unit}`, value: p.name });
+      sheet.addRow([p.quantity, p.unit, p.name]);
     }
   });
 
-  // 🎨 زیباسازی
-  sheet.getRow(1).font = { bold: true };
-  sheet.getRow(2).font = { bold: true };
-  sheet.getColumn(1).alignment = { vertical: 'middle', horizontal: 'right' };
-  sheet.getColumn(2).alignment = { vertical: 'middle', horizontal: 'left' };
-  sheet.eachRow(row => {
-    row.height = 22;
-  });
+  sheet.addRow([]);
+  sheet.addRow(['Notes', order.notes || '']);
 
+  // ✅ خروجی اکسل در حافظه (Buffer)
   const buffer = await workbook.xlsx.writeBuffer();
   return buffer;
 }
 
 function buildTelegramMessage(order) {
-  const faDate = moment(order.created_at).format('jYYYY/jMM/jDD');
-  const faTime = moment(order.created_at).format('HH:mm');
-
   let products = [];
   try {
     products = JSON.parse(order.products_json || '[]');
@@ -111,59 +109,81 @@ function buildTelegramMessage(order) {
   }
 
   const lines = [];
-  lines.push('📦 سفارش جدید محصولات سُها\n');
-  lines.push(`👤 نام: ${order.name}`);
-  lines.push(`📞 تماس: ${order.phone}`);
-  lines.push(`🏠 آدرس: ${order.address}`);
-  if (order.postal_code) lines.push(`📮 کد پستی: ${order.postal_code}`);
+  lines.push('🟢 سفارش جدید ثبت شد!');
+  lines.push('');
+  lines.push(`👤 نام و نام خانوادگی: ${order.name}`);
+  lines.push(`📞 شماره تماس: ${order.phone}`);
+  lines.push(`🏠 آدرس گیرنده: ${order.address}`);
+  if (order.postal_code) lines.push(`📨 کد پستی: ${order.postal_code}`);
   lines.push('');
   lines.push('🧾 محصولات سفارش‌شده:');
   products.forEach(p => {
     if (Number(p.quantity) > 0) {
-      lines.push(`• ${p.name} – ${p.quantity} ${p.unit}`);
+      lines.push(`${p.name} – ${p.quantity} ${p.unit}`);
     }
   });
   lines.push('');
-  lines.push(`🕓 تاریخ ثبت: ${faDate} – ساعت ${faTime}`);
+  if (order.notes) {
+    lines.push('📝 توضیحات:');
+    lines.push(order.notes);
+    lines.push('');
+  }
+  lines.push(`⏰ زمان ثبت: ${order.created_at}`);
   lines.push(`🔢 کد سفارش: ${order.order_code}`);
+
   return lines.join('\n');
 }
 
+// پارسر JSON
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// 📦 مسیر API
 app.post('/api/order', async (req, res) => {
   try {
     const body = req.body;
-    const order = createOrder({
-      name: body.name || '',
-      phone: body.phone || '',
-      address: body.address || '',
-      postal_code: body.postal_code || '',
-      products_json: JSON.stringify([
-        { name: 'سها ۵۰۰ گرمی سبز', quantity: Number(body.saha500_qty || 0), unit: body.saha500_unit || '' },
-        { name: 'سها ۲۵۰ گرمی ساشه', quantity: Number(body.saha250_qty || 0), unit: body.saha250_unit || '' },
-        { name: 'باکس پوچ یک کیلویی', quantity: Number(body.box1kg_qty || 0), unit: body.box1kg_unit || '' },
-        { name: 'پاکت طلایی پنجره‌دار', quantity: Number(body.goldPack_qty || 0), unit: body.goldPack_unit || '' },
-        { name: 'پاکت یک کیلویی ساده', quantity: Number(body.plainPack_qty || 0), unit: body.plainPack_unit || '' }
-      ].filter(p => p.quantity > 0)),
-      notes: body.note || ''
+    const name = body.name || '';
+    const phone = body.phone || '';
+    const address = body.address || '';
+    const postal_code = body.postal_code || '';
+    const notes = body.note || '';
+
+    const products = [
+      { name: 'سها ۵۰۰ گرمی سبز', quantity: Number(body.saha500_qty || 0), unit: body.saha500_unit || '' },
+      { name: 'سها ۲۵۰ گرمی ساشه', quantity: Number(body.saha250_qty || 0), unit: body.saha250_unit || '' },
+      { name: 'باکس پوچ یک کیلویی', quantity: Number(body.box1kg_qty || 0), unit: body.box1kg_unit || '' },
+      { name: 'پاکت طلایی پنجره‌دار', quantity: Number(body.goldPack_qty || 0), unit: body.goldPack_unit || '' },
+      { name: 'پاکت یک کیلویی ساده', quantity: Number(body.plainPack_qty || 0), unit: body.plainPack_unit || '' }
+    ].filter(p => p.quantity > 0);
+
+    const saved = createOrder({
+      name,
+      phone,
+      address,
+      postal_code,
+      products_json: JSON.stringify(products),
+      notes
     });
 
-    const excelBuffer = await generateExcelBuffer(order);
-    const msg = buildTelegramMessage(order);
+    // تولید اکسل در حافظه
+    const excelBuffer = await generateExcelBuffer(saved);
+    const messageText = buildTelegramMessage(saved);
 
-    await bot.sendMessage(CHAT_ID, msg);
+    // ارسال پیام و فایل به گروه تلگرام
+    await bot.sendMessage(CHAT_ID, messageText);
     await bot.sendDocument(CHAT_ID, excelBuffer, {}, {
-      filename: `order-${order.order_code}.xlsx`,
+      filename: `order-${saved.order_code}.xlsx`,
       contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     });
 
-    res.json({ ok: true, order_code: order.order_code });
+    res.json({ ok: true, order_code: saved.order_code });
   } catch (err) {
     console.error('❌ خطا در پردازش سفارش:', err);
     res.status(500).json({ ok: false, error: err.message });
   }
 });
 
-module.exports = (req, res) => app(req, res);
+// ✅ مخصوص Vercel
+module.exports = (req, res) => {
+  app(req, res);
+};
