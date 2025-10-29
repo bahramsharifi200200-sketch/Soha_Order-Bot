@@ -1,13 +1,11 @@
 require('dotenv').config();
 const express = require('express');
-const fs = require('fs');
-const path = require('path');
 const ExcelJS = require('exceljs');
 const Database = require('better-sqlite3');
 const TelegramBot = require('node-telegram-bot-api');
+const path = require('path');
 
 const app = express();
-const EXPORT_DIR = process.env.EXPORT_DIR || path.join(__dirname, 'exports');
 
 // 🧩 پشتیبانی از هر دو نوع نام متغیر (BOT_TOKEN یا TELEGRAM_BOT_TOKEN)
 const BOT_TOKEN = process.env.BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
@@ -20,11 +18,8 @@ if (!BOT_TOKEN || !CHAT_ID) {
 
 const bot = new TelegramBot(BOT_TOKEN, { polling: false });
 
-// پوشه اکسل
-if (!fs.existsSync(EXPORT_DIR)) fs.mkdirSync(EXPORT_DIR, { recursive: true });
-
-// دیتابیس SQLite
-const db = new Database(path.join(__dirname, 'orders.db'));
+// دیتابیس SQLite (در محیط سرورهای serverless موقت است)
+const db = new Database(path.join('/tmp', 'orders.db'));
 db.exec(`
 CREATE TABLE IF NOT EXISTS orders (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -67,7 +62,7 @@ function createOrder(data) {
   return row;
 }
 
-async function generateExcel(order) {
+async function generateExcelBuffer(order) {
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet('Order');
 
@@ -99,10 +94,9 @@ async function generateExcel(order) {
   sheet.addRow([]);
   sheet.addRow(['Notes', order.notes || '']);
 
-  const filename = `order-${order.order_code}.xlsx`;
-  const filepath = path.join(EXPORT_DIR, filename);
-  await workbook.xlsx.writeFile(filepath);
-  return filepath;
+  // ✅ خروجی اکسل در حافظه (Buffer)
+  const buffer = await workbook.xlsx.writeBuffer();
+  return buffer;
 }
 
 function buildTelegramMessage(order) {
@@ -140,11 +134,11 @@ function buildTelegramMessage(order) {
   return lines.join('\n');
 }
 
-// تنظیم پارسر برای JSON
+// پارسر JSON
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// دریافت سفارش از فرم HTML
+// 📦 مسیر API
 app.post('/api/order', async (req, res) => {
   try {
     const body = req.body;
@@ -171,12 +165,14 @@ app.post('/api/order', async (req, res) => {
       notes
     });
 
-    const excelPath = await generateExcel(saved);
+    // تولید اکسل در حافظه
+    const excelBuffer = await generateExcelBuffer(saved);
     const messageText = buildTelegramMessage(saved);
 
+    // ارسال پیام و فایل به گروه تلگرام
     await bot.sendMessage(CHAT_ID, messageText);
-    await bot.sendDocument(CHAT_ID, excelPath, {}, {
-      filename: path.basename(excelPath),
+    await bot.sendDocument(CHAT_ID, excelBuffer, {}, {
+      filename: `order-${saved.order_code}.xlsx`,
       contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     });
 
@@ -187,7 +183,7 @@ app.post('/api/order', async (req, res) => {
   }
 });
 
-// ✅ نسخه مخصوص Vercel — بدون app.listen()
+// ✅ مخصوص Vercel
 module.exports = (req, res) => {
   app(req, res);
 };
