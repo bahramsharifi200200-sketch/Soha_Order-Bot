@@ -191,6 +191,13 @@ app.post('/order', async (req, res) => {
 
 app.use('/exports', express.static(EXPORT_DIR));
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+// ❌ این خط را پاک کن
+// app.listen(PORT, () => {
+//   console.log(`🚀 Server running on port ${PORT}`);
+// });
+
+// ✅ به‌جایش این را بگذار:
+module.exports = (req, res) => {
+  app(req, res);
+};
+
