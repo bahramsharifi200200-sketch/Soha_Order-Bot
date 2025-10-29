@@ -18,139 +18,145 @@ if (!BOT_TOKEN || !CHAT_ID) {
 
 const bot = new TelegramBot(BOT_TOKEN, { polling: false });
 
+// دیتابیس SQLite (در محیط سرورهای serverless موقت است)
+const db = new Database(path.join('/tmp', 'orders.db'));
+db.exec(`
+CREATE TABLE IF NOT EXISTS orders (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  order_code TEXT UNIQUE,
+  name TEXT,
+  phone TEXT,
+  address TEXT,
+  postal_code TEXT,
+  products_json TEXT,
+  notes TEXT,
+  created_at TEXT
+);
+`);
 
-// مسیر فایل ذخیره شمارنده سفارش‌ها
-const counterFile = path.join('/tmp', 'order_count.txt');
-
-// تابع دریافت عدد بعدی کد سفارش (افزایشی واقعی)
-function getNextOrderNumber() {
-  let count = 0;
-  try {
-    if (fs.existsSync(counterFile)) {
-      count = parseInt(fs.readFileSync(counterFile, 'utf8')) || 0;
-    }
-  } catch {}
-  count++;
-  fs.writeFileSync(counterFile, String(count));
-  return count;
+// توابع کمکی
+function formatOrderCode(num) {
+  return 'ORD-' + String(num).padStart(6, '0');
 }
 
-// تبدیل به فرمت شمسی
-function toPersianDateTime(dateStr) {
-  const date = new Date(dateStr);
-  const faDate = new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
-    dateStyle: 'medium',
-  }).format(date);
-  const faTime = new Intl.DateTimeFormat('fa-IR', {
-    timeStyle: 'short',
-  }).format(date);
-  return `${faDate} - ${faTime}`;
+function createOrder(data) {
+  const created_at = new Date().toISOString();
+  const insertTemp = db.prepare(`
+    INSERT INTO orders (order_code, name, phone, address, postal_code, products_json, notes, created_at)
+    VALUES (NULL, @name, @phone, @address, @postal_code, @products_json, @notes, @created_at)
+  `);
+  const info = insertTemp.run({
+    name: data.name,
+    phone: data.phone,
+    address: data.address,
+    postal_code: data.postal_code || '',
+    products_json: data.products_json,
+    notes: data.notes || '',
+    created_at
+  });
+
+  const id = info.lastInsertRowid;
+  const order_code = formatOrderCode(id);
+  db.prepare(`UPDATE orders SET order_code = ? WHERE id = ?`).run(order_code, id);
+  const row = db.prepare(`SELECT * FROM orders WHERE id = ?`).get(id);
+  return row;
 }
 
-// تولید فایل اکسل منظم
 async function generateExcelBuffer(order) {
   const workbook = new ExcelJS.Workbook();
-  const sheet = workbook.addWorksheet('سفارش جدید');
+  const sheet = workbook.addWorksheet('Order');
 
-  sheet.columns = [
-    { header: 'عنوان', key: 'field', width: 25 },
-    { header: 'مقدار', key: 'value', width: 45 }
-  ];
-
-  const rows = [
-    ['کد سفارش', order.order_code],
-    ['تاریخ ثبت (شمسی)', toPersianDateTime(order.created_at)],
-    ['نام و نام خانوادگی', order.name],
-    ['شماره تماس', order.phone],
-    ['آدرس گیرنده', order.address],
-    ['کد پستی', order.postal_code || '—'],
-    ['توضیحات', order.notes || '—'],
-    [],
-    ['محصولات سفارش‌شده', '']
-  ];
-
-  rows.forEach(r => sheet.addRow({ field: r[0], value: r[1] }));
+  sheet.addRow(['Order Code', order.order_code]);
+  sheet.addRow(['Created At', order.created_at]);
+  sheet.addRow([]);
+  sheet.addRow(['Name', order.name]);
+  sheet.addRow(['Phone', order.phone]);
+  sheet.addRow(['Address', order.address]);
+  sheet.addRow(['Postal Code', order.postal_code || '']);
+  sheet.addRow([]);
+  sheet.addRow(['Products']);
+  sheet.addRow(['Qty', 'Unit', 'Product Name']);
 
   let products = [];
   try {
     products = JSON.parse(order.products_json || '[]');
+    if (!Array.isArray(products)) products = [];
   } catch {
     products = [];
   }
 
-  sheet.addRow({ field: 'تعداد', value: 'نام محصول' });
   products.forEach(p => {
-    if (Number(p.quantity) > 0)
-      sheet.addRow({ field: `${p.quantity} ${p.unit}`, value: p.name });
+    if (Number(p.quantity) > 0) {
+      sheet.addRow([p.quantity, p.unit, p.name]);
+    }
   });
 
-  sheet.getRow(1).font = { bold: true };
-  sheet.getColumn('field').alignment = { horizontal: 'right' };
-  sheet.getColumn('value').alignment = { horizontal: 'left' };
-  sheet.eachRow(r => (r.height = 22));
+  sheet.addRow([]);
+  sheet.addRow(['Notes', order.notes || '']);
 
+  // ✅ خروجی اکسل در حافظه (Buffer)
   const buffer = await workbook.xlsx.writeBuffer();
   return buffer;
 }
 
-// ساخت پیام تلگرام زیبا
 function buildTelegramMessage(order) {
   let products = [];
   try {
     products = JSON.parse(order.products_json || '[]');
+    if (!Array.isArray(products)) products = [];
   } catch {
     products = [];
   }
 
   const lines = [];
-  lines.push('📦 سفارش جدید محصولات سُها');
+  lines.push('🟢 سفارش جدید ثبت شد!');
   lines.push('');
-  lines.push(`👤 نام: ${order.name}`);
-  lines.push(`📞 تماس: ${order.phone}`);
-  lines.push(`🏠 آدرس: ${order.address}`);
-  if (order.postal_code) lines.push(`📮 کد پستی: ${order.postal_code}`);
+  lines.push(`👤 نام و نام خانوادگی: ${order.name}`);
+  lines.push(`📞 شماره تماس: ${order.phone}`);
+  lines.push(`🏠 آدرس گیرنده: ${order.address}`);
+  if (order.postal_code) lines.push(`📨 کد پستی: ${order.postal_code}`);
   lines.push('');
   lines.push('🧾 محصولات سفارش‌شده:');
   products.forEach(p => {
-    if (Number(p.quantity) > 0)
-      lines.push(`• ${p.name} – ${p.quantity} ${p.unit}`);
+    if (Number(p.quantity) > 0) {
+      lines.push(`${p.name} – ${p.quantity} ${p.unit}`);
+    }
   });
   lines.push('');
-  lines.push(`🕓 تاریخ ثبت: ${toPersianDateTime(order.created_at)}`);
+  if (order.notes) {
+    lines.push('📝 توضیحات:');
+    lines.push(order.notes);
+    lines.push('');
+  }
+  lines.push(`⏰ زمان ثبت: ${order.created_at}`);
   lines.push(`🔢 کد سفارش: ${order.order_code}`);
 
   return lines.join('\n');
 }
 
-// تنظیم پارسر برای JSON
+// پارسر JSON
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// دریافت سفارش از فرم HTML
+// 📦 مسیر API
 app.post('/api/order', async (req, res) => {
   try {
     const body = req.body;
+    const name = body.name || '';
+    const phone = body.phone || '';
+    const address = body.address || '';
+    const postal_code = body.postal_code || '';
+    const notes = body.note || '';
 
-    const order_code = 'ORD-' + String(getNextOrderNumber()).padStart(6, '0');
-    const created_at = new Date().toISOString();
+    const products = [
+      { name: 'سها ۵۰۰ گرمی سبز', quantity: Number(body.saha500_qty || 0), unit: body.saha500_unit || '' },
+      { name: 'سها ۲۵۰ گرمی ساشه', quantity: Number(body.saha250_qty || 0), unit: body.saha250_unit || '' },
+      { name: 'باکس پوچ یک کیلویی', quantity: Number(body.box1kg_qty || 0), unit: body.box1kg_unit || '' },
+      { name: 'پاکت طلایی پنجره‌دار', quantity: Number(body.goldPack_qty || 0), unit: body.goldPack_unit || '' },
+      { name: 'پاکت یک کیلویی ساده', quantity: Number(body.plainPack_qty || 0), unit: body.plainPack_unit || '' }
+    ].filter(p => p.quantity > 0);
 
-    const order = {
-      order_code,
-      name: body.name || '',
-      phone: body.phone || '',
-      address: body.address || '',
-      postal_code: body.postal_code || '',
-      notes: body.note || '',
-      products_json: JSON.stringify([
-        { name: 'سها ۵۰۰ گرمی سبز', quantity: Number(body.saha500_qty || 0), unit: body.saha500_unit || '' },
-        { name: 'سها ۲۵۰ گرمی ساشه', quantity: Number(body.saha250_qty || 0), unit: body.saha250_unit || '' },
-        { name: 'باکس پوچ یک کیلویی', quantity: Number(body.box1kg_qty || 0), unit: body.box1kg_unit || '' },
-        { name: 'پاکت طلایی پنجره‌دار', quantity: Number(body.goldPack_qty || 0), unit: body.goldPack_unit || '' },
-        { name: 'پاکت یک کیلویی ساده', quantity: Number(body.plainPack_qty || 0), unit: body.plainPack_unit || '' }
-      ].filter(p => p.quantity > 0)),
-      created_at
-    };
-const saved = createOrder({
+    const saved = createOrder({
       name,
       phone,
       address,
