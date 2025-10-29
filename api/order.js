@@ -1,4 +1,3 @@
-// order.js (نسخه هماهنگ با فرم index.html)
 require('dotenv').config();
 const express = require('express');
 const fs = require('fs');
@@ -8,15 +7,18 @@ const Database = require('better-sqlite3');
 const TelegramBot = require('node-telegram-bot-api');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 const EXPORT_DIR = process.env.EXPORT_DIR || path.join(__dirname, 'exports');
 
-if (!process.env.TELEGRAM_BOT_TOKEN || !process.env.TELEGRAM_CHAT_ID) {
-  console.error('❌ لطفاً TELEGRAM_BOT_TOKEN و TELEGRAM_CHAT_ID را در .env تنظیم کن.');
+// 🧩 پشتیبانی از هر دو نوع نام متغیر (BOT_TOKEN یا TELEGRAM_BOT_TOKEN)
+const BOT_TOKEN = process.env.BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
+const CHAT_ID = process.env.CHAT_ID || process.env.TELEGRAM_CHAT_ID;
+
+if (!BOT_TOKEN || !CHAT_ID) {
+  console.error('❌ لطفاً BOT_TOKEN و CHAT_ID را در تنظیمات Vercel تعریف کنید.');
   process.exit(1);
 }
 
-const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: false });
+const bot = new TelegramBot(BOT_TOKEN, { polling: false });
 
 // پوشه اکسل
 if (!fs.existsSync(EXPORT_DIR)) fs.mkdirSync(EXPORT_DIR, { recursive: true });
@@ -143,18 +145,15 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // دریافت سفارش از فرم HTML
-app.post('/order', async (req, res) => {
+app.post('/api/order', async (req, res) => {
   try {
     const body = req.body;
-
-    // 🔹 استخراج داده‌های فرم HTML
     const name = body.name || '';
     const phone = body.phone || '';
     const address = body.address || '';
     const postal_code = body.postal_code || '';
     const notes = body.note || '';
 
-    // 🔹 استخراج محصولات از فیلدهای فرم
     const products = [
       { name: 'سها ۵۰۰ گرمی سبز', quantity: Number(body.saha500_qty || 0), unit: body.saha500_unit || '' },
       { name: 'سها ۲۵۰ گرمی ساشه', quantity: Number(body.saha250_qty || 0), unit: body.saha250_unit || '' },
@@ -172,12 +171,11 @@ app.post('/order', async (req, res) => {
       notes
     });
 
-    // تولید اکسل و ارسال به تلگرام
     const excelPath = await generateExcel(saved);
     const messageText = buildTelegramMessage(saved);
 
-    await bot.sendMessage(process.env.TELEGRAM_CHAT_ID, messageText);
-    await bot.sendDocument(process.env.TELEGRAM_CHAT_ID, excelPath, {}, {
+    await bot.sendMessage(CHAT_ID, messageText);
+    await bot.sendDocument(CHAT_ID, excelPath, {}, {
       filename: path.basename(excelPath),
       contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     });
@@ -189,15 +187,7 @@ app.post('/order', async (req, res) => {
   }
 });
 
-app.use('/exports', express.static(EXPORT_DIR));
-
-// ❌ این خط را پاک کن
-// app.listen(PORT, () => {
-//   console.log(`🚀 Server running on port ${PORT}`);
-// });
-
-// ✅ به‌جایش این را بگذار:
+// ✅ نسخه مخصوص Vercel — بدون app.listen()
 module.exports = (req, res) => {
   app(req, res);
 };
-
