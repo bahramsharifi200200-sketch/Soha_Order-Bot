@@ -18,6 +18,18 @@ if (!BOT_TOKEN || !CHAT_ID) {
 
 const bot = new TelegramBot(BOT_TOKEN, { polling: false });
 
+// 🗓 تابع تبدیل تاریخ میلادی به شمسی
+function toPersianDateTime(dateStr) {
+  const date = new Date(dateStr);
+  const faDate = new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
+    dateStyle: 'medium'
+  }).format(date);
+  const faTime = new Intl.DateTimeFormat('fa-IR', {
+    timeStyle: 'short'
+  }).format(date);
+  return `${faDate}، ${faTime}`;
+}
+
 // دیتابیس SQLite (در محیط سرورهای serverless موقت است)
 const db = new Database(path.join('/tmp', 'orders.db'));
 db.exec(`
@@ -128,9 +140,9 @@ function buildTelegramMessage(order) {
     lines.push(order.notes);
     lines.push('');
   }
-  lines.push(`⏰ زمان ثبت: ${order.created_at}`);
 
-
+  // ⏰ تاریخ ثبت به شمسی
+  lines.push(`⏰ زمان ثبت: ${toPersianDateTime(order.created_at)}`);
   lines.push(`🔢 کد سفارش: ${order.order_code}`);
 
   return lines.join('\n');
