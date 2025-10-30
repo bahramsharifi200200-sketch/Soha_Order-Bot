@@ -121,11 +121,11 @@ function buildTelegramMessage(order) {
   }
 
   const lines = [];
-  lines.push('🟢 سفارش جدید ثبت شد!');
+  lines.push('💁✍️سفارش جدید ثبت شد!');
   lines.push('');
-  lines.push(`👤 نام و نام خانوادگی: ${order.name}`);
-  lines.push(`📞 شماره تماس: ${order.phone}`);
-  lines.push(`🏠 آدرس گیرنده: ${order.address}`);
+  lines.push('👤 نام: ${order.name}`);
+  lines.push(`📞 تماس: ${order.phone}`);
+  lines.push(`🏠 آدرس: ${order.address}`);
   if (order.postal_code) lines.push(`📨 کد پستی: ${order.postal_code}`);
   lines.push('');
   lines.push('🧾 محصولات سفارش‌شده:');
