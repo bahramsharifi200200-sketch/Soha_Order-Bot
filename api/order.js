@@ -7,7 +7,6 @@ const path = require('path');
 
 const app = express();
 
-// 🧩 پشتیبانی از هر دو نوع نام متغیر (BOT_TOKEN یا TELEGRAM_BOT_TOKEN)
 const BOT_TOKEN = process.env.BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
 const CHAT_ID = process.env.CHAT_ID || process.env.TELEGRAM_CHAT_ID;
 
@@ -18,7 +17,6 @@ if (!BOT_TOKEN || !CHAT_ID) {
 
 const bot = new TelegramBot(BOT_TOKEN, { polling: false });
 
-// 🗓 تابع تبدیل تاریخ میلادی به شمسی
 function toPersianDateTime(dateStr) {
   const date = new Date(dateStr);
   const faDate = new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
@@ -30,7 +28,6 @@ function toPersianDateTime(dateStr) {
   return `${faDate}، ${faTime}`;
 }
 
-// دیتابیس SQLite (در محیط سرورهای serverless موقت است)
 const db = new Database(path.join('/tmp', 'orders.db'));
 db.exec(`
 CREATE TABLE IF NOT EXISTS orders (
@@ -46,7 +43,6 @@ CREATE TABLE IF NOT EXISTS orders (
 );
 `);
 
-// توابع کمکی
 function formatOrderCode(num) {
   return 'ORD-' + String(num).padStart(6, '0');
 }
@@ -76,18 +72,40 @@ function createOrder(data) {
 
 async function generateExcelBuffer(order) {
   const workbook = new ExcelJS.Workbook();
-  const sheet = workbook.addWorksheet('Order');
+  const sheet = workbook.addWorksheet('سفارش مشتری');
 
-  sheet.addRow(['Order Code', order.order_code]);
-  sheet.addRow(['Created At', order.created_at]);
+  sheet.mergeCells('A1:F1');
+  const title = sheet.getCell('A1');
+  title.value = '📦 فاکتور ثبت سفارش محصولات سُها';
+  title.font = { bold: true, size: 14 };
+  title.alignment = { horizontal: 'center', vertical: 'middle' };
+  sheet.getRow(1).height = 30;
+
+  sheet.addRow(['نام و نام خانوادگی', 'شماره تماس', 'آدرس گیرنده', 'کد پستی', 'توضیحات', 'تاریخ ثبت']);
+  sheet.getRow(2).font = { bold: true };
+  sheet.getRow(2).alignment = { horizontal: 'center', vertical: 'middle' };
+  sheet.getRow(2).height = 22;
+
+  const infoRow = [
+    order.name,
+    order.phone,
+    order.address,
+    order.postal_code || '—',
+    order.notes || '—',
+    toPersianDateTime(order.created_at)
+  ];
+  sheet.addRow(infoRow);
+
   sheet.addRow([]);
-  sheet.addRow(['Name', order.name]);
-  sheet.addRow(['Phone', order.phone]);
-  sheet.addRow(['Address', order.address]);
-  sheet.addRow(['Postal Code', order.postal_code || '']);
+  const productsTitleRow = sheet.addRow(['محصولات سفارش‌شده']);
+  productsTitleRow.font = { bold: true, size: 12 };
+  sheet.mergeCells(`A${sheet.lastRow.number}:F${sheet.lastRow.number}`);
+  productsTitleRow.alignment = { horizontal: 'center', vertical: 'middle' };
   sheet.addRow([]);
-  sheet.addRow(['Products']);
-  sheet.addRow(['Qty', 'Unit', 'Product Name']);
+
+  sheet.addRow(['ردیف', 'نام محصول', 'تعداد', 'واحد']);
+  sheet.getRow(sheet.lastRow.number).font = { bold: true };
+  sheet.getRow(sheet.lastRow.number).alignment = { horizontal: 'center' };
 
   let products = [];
   try {
@@ -97,20 +115,35 @@ async function generateExcelBuffer(order) {
     products = [];
   }
 
-  products.forEach(p => {
+  products.forEach((p, i) => {
     if (Number(p.quantity) > 0) {
-      sheet.addRow([p.quantity, p.unit, p.name]);
+      sheet.addRow([i + 1, p.name, p.quantity, p.unit]);
     }
   });
 
   sheet.addRow([]);
-  sheet.addRow(['Notes', order.notes || '']);
+  sheet.addRow(['کد سفارش', order.order_code]);
+  sheet.getRow(sheet.lastRow.number).font = { bold: true };
 
-  // ✅ خروجی اکسل در حافظه (Buffer)
+  sheet.columns = [
+    { width: 8 },
+    { width: 35 },
+    { width: 12 },
+    { width: 12 },
+    { width: 25 },
+    { width: 25 }
+  ];
+
+  sheet.eachRow(row => {
+    row.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+    row.height = 24;
+  });
+
   const buffer = await workbook.xlsx.writeBuffer();
   return buffer;
 }
 
+// ✅ فقط بخش پیام تلگرام تغییر کرد
 function buildTelegramMessage(order) {
   let products = [];
   try {
@@ -123,15 +156,14 @@ function buildTelegramMessage(order) {
   const lines = [];
   lines.push('🟢 سفارش جدید ثبت شد!');
   lines.push('');
-  lines.push(`👤 نام و نام خانوادگی: ${order.name}`);
-  lines.push(`📞 شماره تماس: ${order.phone}`);
-  lines.push(`🏠 آدرس گیرنده: ${order.address}`);
-  if (order.postal_code) lines.push(`📨 کد پستی: ${order.postal_code}`);
+  lines.push(`👤 نام: ${order.name}`);
+  lines.push(`📞 تماس: ${order.phone}`);
+  lines.push(`🏠 آدرس: ${order.address}`);
   lines.push('');
-  lines.push('🧾 محصولات سفارش‌شده:');
+  lines.push('🧾 سفارش:');
   products.forEach(p => {
     if (Number(p.quantity) > 0) {
-      lines.push(`${p.name} – ${p.quantity} ${p.unit}`);
+      lines.push(`_ ${p.name} – ${p.quantity} ${p.unit}`);
     }
   });
   lines.push('');
@@ -141,18 +173,15 @@ function buildTelegramMessage(order) {
     lines.push('');
   }
 
-  // ⏰ تاریخ ثبت به شمسی
-  lines.push(`⏰ زمان ثبت: ${toPersianDateTime(order.created_at)}`);
+  lines.push(`🕓 زمان ثبت: ${toPersianDateTime(order.created_at)}`);
   lines.push(`🔢 کد سفارش: ${order.order_code}`);
 
   return lines.join('\n');
 }
 
-// پارسر JSON
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// 📦 مسیر API
 app.post('/api/order', async (req, res) => {
   try {
     const body = req.body;
@@ -179,11 +208,9 @@ app.post('/api/order', async (req, res) => {
       notes
     });
 
-    // تولید اکسل در حافظه
     const excelBuffer = await generateExcelBuffer(saved);
     const messageText = buildTelegramMessage(saved);
 
-    // ارسال پیام و فایل به گروه تلگرام
     await bot.sendMessage(CHAT_ID, messageText);
     await bot.sendDocument(CHAT_ID, excelBuffer, {}, {
       filename: `order-${saved.order_code}.xlsx`,
@@ -197,7 +224,6 @@ app.post('/api/order', async (req, res) => {
   }
 });
 
-// ✅ مخصوص Vercel
 module.exports = (req, res) => {
   app(req, res);
 };
