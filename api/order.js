@@ -128,7 +128,8 @@ function buildTelegramMessage(order) {
     lines.push(order.notes);
     lines.push('');
   }
-  lines.push(`⏰ زمان ثبت: ${toPersianDateTime(order.created_at)}`);
+  lines.push(`⏰ زمان ثبت: ${order.created_at}`);
+
 
   lines.push(`🔢 کد سفارش: ${order.order_code}`);
 
