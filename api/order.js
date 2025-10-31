@@ -143,7 +143,7 @@ async function generateExcelBuffer(order) {
   return buffer;
 }
 
-// ✅ فقط بخش پیام تلگرام تغییر کرد
+// ✅ فقط پیام تلگرام اصلاح شده (اضافه شدن کد پستی)
 function buildTelegramMessage(order) {
   let products = [];
   try {
@@ -159,6 +159,7 @@ function buildTelegramMessage(order) {
   lines.push(`👤 نام: ${order.name}`);
   lines.push(`📞 تماس: ${order.phone}`);
   lines.push(`🏠 آدرس: ${order.address}`);
+  if (order.postal_code) lines.push(`📮 کد پستی: ${order.postal_code}`);
   lines.push('');
   lines.push('🧾 سفارش:');
   products.forEach(p => {
