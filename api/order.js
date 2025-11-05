@@ -1,71 +1,54 @@
-// api/order.js
-
-let orderCount = 0; // شمارنده سفارش‌ها (اگر ریست نشود بهتر در DB ذخیره شود)
-
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ message: "Method Not Allowed" });
+  if (req.method !== "POST")
+    return res.status(405).json({ ok: false, message: "Method Not Allowed" });
+
+  const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+  const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+    return res.status(500).json({
+      ok: false,
+      message: "⚠️ توکن یا چت آیدی تلگرام تنظیم نشده!",
+    });
   }
 
   const { name, phone, address, postalCode, products, notes } = req.body;
 
-  // شمارنده سفارش +1
-  orderCount++;
-
-  // زمان واقعی ایران
-  const date = new Date().toLocaleString("fa-IR", {
-    timeZone: "Asia/Tehran",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    weekday: "long",
-    hour: "2-digit",
-    minute: "2-digit"
+  let productList = "";
+  products.forEach((p) => {
+    if (p.quantity > 0) {
+      productList += `• ${p.title}
+  تعداد: ${p.quantity}
+  نوع بسته‌بندی: ${p.choice ? p.choice : "-"}\n\n`;
+    }
   });
 
-  // ساخت متن سفارش محصولات
-  const productsText = products
-    .filter(p => p.quantity && p.choice)
-    .map(p => `${p.title} → تعداد ${p.quantity} (${p.choice === "carton" ? "کارتن" : "بسته"})`)
-    .join("\n");
+  const text = `
+📦 *سفارش جدید ثبت شد* ✅
 
-  // متن نهایی برای تلگرام
-  const message = `
-💁 سفارش جدید ثبت شد
+👤 *نام:* ${name}
+📱 *شماره تماس:* ${phone}
+🏠 *آدرس:* ${address || "-"}
+✉️ *کد پستی:* ${postalCode || "-"}
 
-👤 نام: ${name}
-📱 تماس: ${phone}
-🏠 آدرس گیرنده: ${address || "—"}
-✉️ کد پستی: ${postalCode || "—"}
+🍃 *محصولات سفارش داده شده:* 
+${productList || "بدون انتخاب محصول"}
 
-🛍 سفارش‌ها:
-${productsText || "هیچ مورد انتخاب نشده"}
+📝 *توضیحات:* ${notes || "-"}
+  `;
 
-📝 توضیحات:
-${notes || "—"}
+  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
 
-⏱ زمان ثبت: ${date}
-#️⃣ شماره سفارش: ${orderCount}
-  `.trim();
-
-
-  //  ✅ ارسال به تلگرام
-  try {
-    await fetch(`https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`, {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        chat_id: process.env.CHAT_ID,
-        text: message
-      })
-    });
-  } catch (err) {
-    console.error("خطا در ارسال پیام به تلگرام:", err);
-  }
-
-  return res.status(200).json({
-    ok: true,
-    message: "✅ سفارش با موفقیت ثبت و ارسال شد",
-    orderNumber: orderCount
+  await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: TELEGRAM_CHAT_ID,
+      text,
+      parse_mode: "Markdown",
+    }),
   });
+
+  return res.status(200).json({ ok: true, message: "✅ سفارش ثبت و ارسال شد" });
 }
+￼Enter
