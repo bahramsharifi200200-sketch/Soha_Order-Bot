@@ -1,0 +1,8 @@
+{
+  "name": "soha-order-bot",
+  "version": "1.0.0",
+  "description": "Static site + Telegram order API",
+  "type": "module",
+  "scripts": {},
+  "dependencies": {}
+}
