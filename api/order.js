@@ -1,3 +1,5 @@
+let orderCounter = 0; // شمارنده سفارش‌ها
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ ok: false, message: "Method Not Allowed" });
@@ -13,38 +15,56 @@ export default async function handler(req, res) {
     });
   }
 
-  let body;
-  try {
-    body = req.body || {};
-  } catch (err) {
-    return res.status(400).json({ ok: false, message: "Bad request body" });
-  }
+  const { name, phone, address, postalCode, products = [], notes } = req.body;
 
-  const { name, phone, address, postalCode, products = [], notes } = body;
+  // شمارنده واقعی +1
+  orderCounter++;
 
-  // تابع ساده برای جلوگیری از مشکل کاراکترهای خاص در HTML
-  const escapeHtml = (s = "") =>
-    String(s)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;");
+  // تاریخ و روز هفته شمسی
+  const now = new Date();
+  const dateFa = new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }).format(now);
 
-  // ساخت لیست محصولات فقط اگر تعداد بیشتر از 0 باشد
+  const weekdayFa = new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
+    weekday: "long",
+  }).format(now);
+
+  // ساخت متن محصولات
   let productList = "";
   products.forEach((p) => {
-    const qty = Number(p.quantity || 0);
-    if (qty > 0) {
-      productList += `• ${escapeHtml(p.title)}\nتعداد: ${qty}\nنوع بسته‌بندی: ${escapeHtml(p.choice || "-")}\n\n`;
+    if (p.quantity > 0) {
+      const type =
+        p.choice === "carton" ? "کارتن 📦" :
+        p.choice === "pack" ? "بسته 🛍" : "";
+      productList += `• _${p.quantity} ${type} از ${p.title}_\n`;
     }
   });
 
-  const text = `<b>📦 سفارش جدید ثبت شد</b>\n\n` +
-    `<b>👤 نام:</b> ${escapeHtml(name || "-")}\n` +
-    `<b>📱 شماره تماس:</b> ${escapeHtml(phone || "-")}\n` +
-    `<b>🏠 آدرس:</b> ${escapeHtml(address || "-")}\n` +
-    `<b>✉️ کد پستی:</b> ${escapeHtml(postalCode || "-")}\n\n` +
-    `<b>🍃 محصولات:</b>\n${productList ? escapeHtml(productList) : "- هیچ محصولی انتخاب نشده -"}\n` +
-    `\n<b>📝 توضیحات:</b>\n${escapeHtml(notes || "-")}`;
+  if (!productList.trim()) productList = "_هیچ محصولی انتخاب نشده_";
+
+  // متن پیام نهایی برای تلگرام
+  const text =
+`🎉 <b>سفارش جدید ثبت شد</b> 🎉
+
+👤 <b>نام:</b> ${name || "-"}
+📞 <b>تماس:</b> ${phone || "-"}
+🏡 <b>آدرس:</b> ${address || "-"}
+📮 <b>کد پستی:</b> ${postalCode || "-"}
+
+🛒 <b>محصولات سفارش داده شده:</b>
+${productList}
+
+📝 <b>توضیحات:</b>
+${notes || "-"}
+
+⏱ <b>زمان ثبت سفارش:</b>
+${dateFa} - ${weekdayFa}
+
+🔢 <b>شماره سفارش:</b> ${orderCounter}
+`;
 
   const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
 
@@ -61,13 +81,12 @@ export default async function handler(req, res) {
 
     const tgJson = await tgRes.json();
     if (!tgJson.ok) {
-      // پاسخ تلگرام خطا داده
-      return res.status(500).json({ ok: false, message: "Telegram error: " + (tgJson.description || "unknown") });
+      return res.status(500).json({ ok: false, message: "Telegram error" });
     }
 
     return res.status(200).json({ ok: true, message: "✅ سفارش با موفقیت ارسال شد" });
   } catch (err) {
-    console.error("Send to Telegram error:", err);
     return res.status(500).json({ ok: false, message: "خطا در ارسال به تلگرام" });
   }
 }
+￼Enter
