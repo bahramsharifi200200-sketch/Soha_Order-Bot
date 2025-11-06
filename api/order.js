@@ -12,40 +12,33 @@ export default async function handler(req, res) {
 
   const { name, phone, address, postalCode, products = [], notes } = req.body;
 
-  // نام‌ های مختصر محصولات
-  const mapNames = {
-    "جعبه ۲۵۰ گرمی ساشه‌ی سها": "۲۵۰ گرمی ساشه",
-    "بسته ۵۰۰ گرم پاکت طلایی پنجره دار": "۵۰۰ گرمی پاکت طلایی",
-    "بسته یک کیلویی باکس پوچ": "۱ کیلویی باکس پوچ",
-    "بسته یک کیلویی معمولی": "۱ کیلویی معمولی",
-    "بسته ۵۰۰ گرمی سبز سها": "۵۰۰ گرمی سبز سها"
-  };
+  const rename = (t = "") =>
+    t
+      .replace("جعبه ۲۵۰ گرمی ساشه‌ی سها", "۲۵۰ گرمی ساشه")
+      .replace("بسته ۵۰۰ گرم پاکت طلایی پنجره دار", "۵۰۰ گرمی پاکت طلایی")
+      .replace("بسته یک کیلویی باکس پوچ", "۱ کیلویی باکس پوچ")
+      .replace("بسته یک کیلویی معمولی", "۱ کیلویی معمولی")
+      .replace("بسته ۵۰۰ گرمی سبز سها", "۵۰۰ گرمی سبز سها");
 
-  // لیست سفارش‌ها
-  let details = "";
+  let list = "";
   products.forEach(p => {
     const qty = Number(p.quantity || 0);
     if (qty > 0) {
       const type = p.choice === "carton" ? "کارتن" : "بسته";
-      const nameShort = mapNames[p.title] || p.title;
-      details += `• ${qty} ${type} ${nameShort}\n`;
+      list += `• ${qty} ${type} ${rename(p.title)}\n`;
     }
   });
 
-  if (!details.trim()) details = "— ثبت نشده —";
+  if (!list.trim()) list = "— ثبت نشده —";
 
-  // زمان دقیق
+  // زمان واقعی
   const now = new Date();
   const dateFa = new Intl.DateTimeFormat("fa-IR", { dateStyle: "full" }).format(now);
-  const timeFa = new Intl.DateTimeFormat("fa-IR", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false
-  }).format(now);
+  const timeFa = new Intl.DateTimeFormat("fa-IR", { hour: "2-digit", minute: "2-digit", hour12: false }).format(now);
 
-  const message = 
+  const msg = 
 `┏━━━━━━━━━━━🌿━━━━━━━━━━━┓
-       سفارش جدید ثبت شد
+        سفارش جدید ثبت شد
 ┗━━━━━━━━━━━🌿━━━━━━━━━━━┛
 
 👤 نام مشتری:
@@ -62,14 +55,14 @@ ${postalCode || "-"}
 
 ━━━━━━━━━━━━━━━━━━
 📦 جزئیات سفارش:
-${details.trim()}
+${list.trim()}
 ━━━━━━━━━━━━━━━━━━
 
 📝 توضیحات:
 ${notes || "-"}
 
 ⏱ زمان ثبت:
-${dateFa} | ساعت ${timeFa}
+${dateFa}  |  ساعت ${timeFa}
 `;
 
   try {
@@ -78,13 +71,12 @@ ${dateFa} | ساعت ${timeFa}
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         chat_id: CHAT_ID,
-        text: message
+        text: msg
       })
     });
 
-    return res.status(200).json({ ok: true, message: "✅ ارسال شد" });
-
-  } catch (error) {
-    return res.status(500).json({ ok: false, message: "خطا در ارسال", error });
+    return res.status(200).json({ ok: true });
+  } catch {
+    return res.status(500).json({ ok: false });
   }
 }
