@@ -1,72 +1,74 @@
 export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return res.status(405).json({ message: "Method Not Allowed" });
+    return res.status(405).json({ ok: false, message: "Method Not Allowed" });
   }
 
-  const { name, phone, address, postalCode, products, notes } = req.body;
+  const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+  const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
-  const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-  const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
-  const URL = `https://api.telegram.org/bot${TOKEN}/sendMessage`;
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+    return res.status(500).json({
+      ok: false,
+      message: "⚠️ توکن یا چت آیدی در Vercel تنظیم نشده"
+    });
+  }
 
-  // تاریخ و زمان واقعی تهران
-  const formatter = new Intl.DateTimeFormat("fa-IR", {
+  const { name, phone, address, postalCode, products = [], notes } = req.body;
+
+  // فرمت زمان واقعی ایران
+  const datetime = new Intl.DateTimeFormat("fa-IR", {
     dateStyle: "full",
     timeStyle: "short",
     timeZone: "Asia/Tehran"
+  }).format(new Date());
+
+  let productText = "";
+
+  products.forEach(p => {
+    if (Number(p.quantity) > 0) {
+      productText += `🔹 *${p.quantity}×* ${p.title} (${p.choice === "carton" ? "کارتن" : "بسته"})\n`;
+    }
   });
-  const datetime = formatter.format(new Date());
 
-  // ساخت بخش سفارشات
-  const productLines = products
-    .filter(p => p.qty > 0 || p.quantity > 0)
-    .map(p => {
-      const qty = p.qty || p.quantity;
-      const choice = p.type || p.choice;
-      return `🔹 ${qty} × ${p.name || p.title} (${choice === "carton" ? "کارتن" : "بسته"})`;
-    })
-    .join("\n");
+  if (!productText) productText = "‌— هیچ محصولی انتخاب نشده —";
 
-  const msg = `
-╔══════════════════════╗
-   🌿 *سفارش جدید ثبت شد* 🌿
-╚══════════════════════╝
+  const text = `
+🟢 *سفارش جدید ثبت شد*
 
-👤 *نام مشتری:*  ${name}
-📱 *شماره تماس:*  ${phone}
-🏠 *آدرس:*  ${address || "—"}
-📮 *کد پستی:*  ${postalCode || "—"}
+👤 *نام:* ${name}
+📞 *تماس:* ${phone}
+🏠 *آدرس:* ${address}
+📮 *کد پستی:* ${postalCode}
 
-━━━━━━━━━━━━━━
+🛍 *جزئیات سفارش:*
+${productText}
 
-🛒 *جزئیات سفارش:*
-${productLines || "بدون انتخاب"}
-
-━━━━━━━━━━━━━━
-
-📝 *توضیحات مشتری:*
-${notes || "—"}
-
-⏱ *زمان ثبت:*  
-${datetime}
-
-#سفارش_جدید ✅
+📝 *توضیحات:* ${notes || "—"}
+⏱ *زمان ثبت:* ${datetime}
 `.trim();
 
+  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+
   try {
-    await fetch(URL, {
+    const send = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        chat_id: CHAT_ID,
-        text: msg,
+        chat_id: TELEGRAM_CHAT_ID,
+        text,
         parse_mode: "Markdown"
       })
     });
 
-    return res.status(200).json({ message: "✅ سفارش با موفقیت ارسال شد" });
+    const result = await send.json();
+    
+    if (!result.ok) {
+      return res.status(500).json({ ok: false, message: "Telegram Error", error: result });
+    }
+
+    return res.status(200).json({ ok: true, message: "✅ سفارش با موفقیت ارسال شد" });
+
   } catch (err) {
-    console.log(err);
-    return res.status(500).json({ message: "❌ خطا در ارسال پیام به تلگرام" });
+    return res.status(500).json({ ok: false, message: "خطای اتصال به تلگرام", error: err });
   }
 }
