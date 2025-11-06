@@ -8,14 +8,24 @@ export default async function handler(req, res) {
 
   const { name, phone, address, postalCode, products = [], notes } = req.body;
 
-  // زمان واقعی ایران
-  const datetime = new Intl.DateTimeFormat("fa-IR", {
-    dateStyle: "full",
+  // زمان ایران دقیق
+  const date = new Date();
+  const fa = new Intl.DateTimeFormat("fa-IR", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    timeZone: "Asia/Tehran"
+  }).format(date);
+
+  const time = new Intl.DateTimeFormat("fa-IR", {
     timeStyle: "short",
     timeZone: "Asia/Tehran"
-  }).format(new Date());
+  }).format(date);
 
-  // تبدیل نام محصولات به حالت مختصر
+  const datetime = `${fa}  |  ساعت  ${time}`;
+
+  // مختصر کردن نام محصولات
   const shortNames = {
     "جعبه ۲۵۰ گرمی ساشه‌ی سها": "۲۵۰ گرمی ساشه",
     "بسته ۵۰۰ گرم پاکت طلایی پنجره دار": "۵۰۰ گرمی پاکت طلایی",
@@ -35,32 +45,35 @@ export default async function handler(req, res) {
 
   if (!productList.trim()) productList = "— هیچ محصولی انتخاب نشده —";
 
+  // پیام نهایی با HTML + فاصله‌دهی استاندارد و بدون به‌هم‌ریختگی
   const message = `
+<pre>
 ╔══════════════🌿══════════════╗
-         🧾 *سفارش جدید ثبت شد*
+           🧾 سفارش جدید ثبت شد
 ╚══════════════🌿══════════════╝
+</pre>
 
-👤 *نام مشتری:*  
+<b>👤 نام مشتری:</b>
 ${name}
 
-📞 *شماره تماس:*  
+<b>📞 شماره تماس:</b>
 ${phone}
 
-🏠 *آدرس:*  
+<b>🏠 آدرس:</b>
 ${address || "—"}
 
-📮 *کد پستی:*  
+<b>📮 کد پستی:</b>
 ${postalCode || "—"}
 
-━━━ *جزئیات سفارش* ━━━
+<b>━━━ جزئیات سفارش ━━━</b>
 ${productList.trim()}
 
-💬 *توضیحات:*  
+<b>💬 توضیحات:</b>
 ${notes || "—"}
 
-⏱ *زمان ثبت:*  
+<b>⏱ زمان ثبت:</b>
 ${datetime}
-`.trim();
+  `.trim();
 
   await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
     method: "POST",
@@ -68,9 +81,9 @@ ${datetime}
     body: JSON.stringify({
       chat_id: CHAT_ID,
       text: message,
-      parse_mode: "Markdown"
+      parse_mode: "HTML"
     })
   });
 
-  return res.status(200).json({ ok: true, message: "✅ ثبت و ارسال موفق" });
+  return res.status(200).json({ ok: true, message: "✅ ارسال شد" });
 }
