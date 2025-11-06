@@ -7,11 +7,12 @@ export default async function handler(req, res) {
   const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
   if (!TOKEN || !CHAT_ID) {
-    return res.status(500).json({ ok: false, message: "توکن یا چت آیدی تنظیم نشده" });
+    return res.status(500).json({ ok: false, message: "توکن یا چت آیدی تنظیم نشده است" });
   }
 
   const { name, phone, address, postalCode, products = [], notes } = req.body;
 
+  // تبدیل نام‌ها به نسخه‌ی مختصر
   const rename = (t = "") =>
     t
       .replace("جعبه ۲۵۰ گرمی ساشه‌ی سها", "۲۵۰ گرمی ساشه")
@@ -20,6 +21,7 @@ export default async function handler(req, res) {
       .replace("بسته یک کیلویی معمولی", "۱ کیلویی معمولی")
       .replace("بسته ۵۰۰ گرمی سبز سها", "۵۰۰ گرمی سبز سها");
 
+  // ساخت لیست سفارش مرتب
   let list = "";
   products.forEach(p => {
     const qty = Number(p.quantity || 0);
@@ -31,15 +33,14 @@ export default async function handler(req, res) {
 
   if (!list.trim()) list = "— ثبت نشده —";
 
-  // زمان واقعی
+  // زمان ایران
   const now = new Date();
   const dateFa = new Intl.DateTimeFormat("fa-IR", { dateStyle: "full" }).format(now);
   const timeFa = new Intl.DateTimeFormat("fa-IR", { hour: "2-digit", minute: "2-digit", hour12: false }).format(now);
 
-  const msg = 
-`┏━━━━━━━━━━━🌿━━━━━━━━━━━┓
-        سفارش جدید ثبت شد
-┗━━━━━━━━━━━🌿━━━━━━━━━━━┛
+  // طرح دوم (مینیمال لوکس)
+  const msg =
+`─────── ✦ سفارش جدید ثبت شد ✦ ───────
 
 👤 نام مشتری:
 ${name || "-"}
@@ -53,10 +54,10 @@ ${address || "-"}
 📮 کد پستی:
 ${postalCode || "-"}
 
-━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━
 📦 جزئیات سفارش:
 ${list.trim()}
-━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━
 
 📝 توضیحات:
 ${notes || "-"}
@@ -76,7 +77,8 @@ ${dateFa}  |  ساعت ${timeFa}
     });
 
     return res.status(200).json({ ok: true });
-  } catch {
-    return res.status(500).json({ ok: false });
+
+  } catch (error) {
+    return res.status(500).json({ ok: false, error });
   }
 }
