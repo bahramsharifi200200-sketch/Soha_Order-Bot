@@ -1,89 +1,101 @@
+import fetch from "node-fetch";
+import moment from "moment-jalaali";
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ ok: false, message: "Method Not Allowed" });
   }
 
-  const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-  const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+  try {
+    const {
+      name,
+      phone,
+      address,
+      postal,
+      p250_carton,
+      p250_pack,
+      p500_gold_pack,
+      p500_gold_carton,
+      onekilo_box_pack,
+      onekilo_box_carton,
+      onekilo_simple_pack,
+      onekilo_simple_carton,
+      notes,
+    } = req.body;
 
-  const { name, phone, address, postalCode, products = [], notes } = req.body;
+    // توکن و چت آی‌دی که تو ویرسل گذاشتی
+    const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
-  // زمان ایران دقیق
-  const date = new Date();
-  const fa = new Intl.DateTimeFormat("fa-IR", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    timeZone: "Asia/Tehran"
-  }).format(date);
+    // زمان شمسی دقیق
+    moment.loadPersian({usePersianDigits:true});
+    const nowDate = moment().format("jYYYY/jMM/jDD");
+    const nowPretty = moment().format("jD jMMMM jYYYY");
+    const weekday = moment().format("dddd");
+    const timeNow = moment().format("HH:mm");
 
-  const time = new Intl.DateTimeFormat("fa-IR", {
-    timeStyle: "short",
-    timeZone: "Asia/Tehran"
-  }).format(date);
+    // تبدیل سفارش‌ها به مجموعه لیست مرتب
+    const orders = [];
 
-  const datetime = `${fa}  |  ساعت  ${time}`;
+    const add = (count, label) => {
+      if (count && Number(count) > 0) orders.push(`• ${count} ${label}`);
+    };
 
-  // مختصر کردن نام محصولات
-  const shortNames = {
-    "جعبه ۲۵۰ گرمی ساشه‌ی سها": "۲۵۰ گرمی ساشه",
-    "بسته ۵۰۰ گرم پاکت طلایی پنجره دار": "۵۰۰ گرمی پاکت طلایی",
-    "بسته یک کیلویی باکس پوچ": "۱ کیلویی باکس پوچ",
-    "بسته یک کیلویی معمولی": "۱ کیلویی معمولی",
-    "بسته ۵۰۰ گرمی سبز سها": "۵۰۰ گرمی سبز سها"
-  };
+    add(p250_carton, "کارتن ۲۵۰ گرمی ساشه");
+    add(p250_pack, "بسته ۲۵۰ گرمی ساشه");
+    add(p500_gold_pack, "بسته ۵۰۰ گرمی پاکت طلایی");
+    add(p500_gold_carton, "کارتن ۵۰۰ گرمی پاکت طلایی");
+    add(onekilo_box_pack, "بسته ۱ کیلویی باکس پوچ");
+    add(onekilo_box_carton, "کارتن ۱ کیلویی باکس پوچ");
+    add(onekilo_simple_pack, "بسته ۱ کیلویی معمولی");
+    add(onekilo_simple_carton, "کارتن ۱ کیلویی معمولی");
 
-  let productList = "";
-  products.forEach(p => {
-    if (Number(p.quantity) > 0) {
-      const cleanName = shortNames[p.title] || p.title;
-      const typeText = p.choice === "carton" ? "کارتن" : "بسته";
-      productList += `• ${p.quantity} ${typeText} ${cleanName}\n`;
-    }
-  });
+    const orderText = orders.length > 0 ? orders.join("\n") : "— ثبت نشده";
 
-  if (!productList.trim()) productList = "— هیچ محصولی انتخاب نشده —";
-
-  // پیام نهایی با HTML + فاصله‌دهی استاندارد و بدون به‌هم‌ریختگی
-  const message = `
-<pre>
-╔══════════════🌿══════════════╗
+    // پیام نهایی **لوکس و منظم**
+    const message = `
+┏━━━━━━━━━━━━🌿━━━━━━━━━━━┓
            🧾 سفارش جدید ثبت شد
-╚══════════════🌿══════════════╝
-</pre>
+┗━━━━━━━━━━━━🌿━━━━━━━━━━━┛
 
-<b>👤 نام مشتری:</b>
+👤 نام مشتری:
 ${name}
 
-<b>📞 شماره تماس:</b>
+📞 شماره تماس:
 ${phone}
 
-<b>🏠 آدرس:</b>
-${address || "—"}
+🏠 آدرس:
+${address}
 
-<b>📮 کد پستی:</b>
-${postalCode || "—"}
+📮 کد پستی:
+${postal || "—"}
 
-<b>━━━ جزئیات سفارش ━━━</b>
-${productList.trim()}
+━━ جزئیات سفارش ━━
+${orderText}
 
-<b>💬 توضیحات:</b>
+💬 توضیحات:
 ${notes || "—"}
 
-<b>⏱ زمان ثبت:</b>
-${datetime}
-  `.trim();
+⏱ زمان ثبت:
+${weekday}  ${nowPretty}  /  ${nowDate}
+ساعت ${timeNow}
+    `.trim();
 
-  await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: CHAT_ID,
-      text: message,
-      parse_mode: "HTML"
-    })
-  });
+    // ارسال پیام به تلگرام
+    await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: CHAT_ID,
+        text: message,
+        parse_mode: "HTML"
+      }),
+    });
 
-  return res.status(200).json({ ok: true, message: "✅ ارسال شد" });
+    return res.json({ ok: true, message: "Success" });
+
+  } catch (error) {
+    console.error("Error:", error);
+    return res.status(500).json({ ok: false, message: "Server Error" });
+  }
 }
