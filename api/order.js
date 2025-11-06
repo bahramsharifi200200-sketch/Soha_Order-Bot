@@ -1,46 +1,55 @@
 export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return res.status(405).json({ ok: false, message: "Method Not Allowed" });
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+  const {
+    name,
+    phone,
+    address,
+    postalCode,
+    products,
+    notes,
+  } = req.body;
+
+  const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
   const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
-  if (!TOKEN || !CHAT_ID) {
-    return res.status(500).json({ ok: false, message: "توکن یا چت آیدی تنظیم نشده است" });
+  if (!BOT_TOKEN || !CHAT_ID) {
+    return res.status(500).json({ error: "Bot token or chat id missing" });
   }
 
-  const { name, phone, address, postalCode, products = [], notes } = req.body;
+  // تبدیل تاریخ به شمسی
+  const now = new Date();
+  const dateFa = now.toLocaleDateString("fa-IR", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    weekday: "long",
+  });
+  const timeFa = now.toLocaleTimeString("fa-IR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
-  // تبدیل نام‌ها به نسخه‌ی مختصر
-  const rename = (t = "") =>
-    t
-      .replace("جعبه ۲۵۰ گرمی ساشه‌ی سها", "۲۵۰ گرمی ساشه")
-      .replace("بسته ۵۰۰ گرم پاکت طلایی پنجره دار", "۵۰۰ گرمی پاکت طلایی")
-      .replace("بسته یک کیلویی باکس پوچ", "۱ کیلویی باکس پوچ")
-      .replace("بسته یک کیلویی معمولی", "۱ کیلویی معمولی")
-      .replace("بسته ۵۰۰ گرمی سبز سها", "۵۰۰ گرمی سبز سها");
-
-  // ساخت لیست سفارش مرتب
+  // ساخت لیست سفارشات
   let list = "";
-  products.forEach(p => {
-    const qty = Number(p.quantity || 0);
-    if (qty > 0) {
-      const type = p.choice === "carton" ? "کارتن" : "بسته";
-      list += `• ${qty} ${type} ${rename(p.title)}\n`;
+  products.forEach((p) => {
+    if (p.count && p.count !== "0") {
+      let typeLabel = p.type === "carton" ? "کارتن" : "بسته";
+      list += `• ${p.count} ${typeLabel} ${p.title}\n`;
     }
   });
 
-  if (!list.trim()) list = "— ثبت نشده —";
+  if (!list.trim()) {
+    list = "—";
+  }
 
-  // زمان ایران
-  const now = new Date();
-  const dateFa = new Intl.DateTimeFormat("fa-IR", { dateStyle: "full" }).format(now);
-  const timeFa = new Intl.DateTimeFormat("fa-IR", { hour: "2-digit", minute: "2-digit", hour12: false }).format(now);
-
-  // طرح دوم (مینیمال لوکس)
+  // پیام نهایی (طرح سوم)
   const msg =
-`─────── ✦ سفارش جدید ثبت شد ✦ ───────
+`┏━━━━━━━━━━━━━━━┓
+   ✨ سفارش جدید ثبت شد ✨
+┗━━━━━━━━━━━━━━━┛
 
 👤 نام مشتری:
 ${name || "-"}
@@ -54,31 +63,29 @@ ${address || "-"}
 📮 کد پستی:
 ${postalCode || "-"}
 
-━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━
 📦 جزئیات سفارش:
 ${list.trim()}
-━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━
 
 📝 توضیحات:
-${notes || "-"}
+${notes?.trim() || "—"}
 
 ⏱ زمان ثبت:
-${dateFa}  |  ساعت ${timeFa}
+${dateFa} | ساعت ${timeFa}
 `;
 
-  try {
-    await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: CHAT_ID,
-        text: msg
-      })
-    });
+  const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
 
-    return res.status(200).json({ ok: true });
+  await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: CHAT_ID,
+      text: msg,
+      parse_mode: "HTML",
+    }),
+  });
 
-  } catch (error) {
-    return res.status(500).json({ ok: false, error });
-  }
+  return res.json({ ok: true });
 }
