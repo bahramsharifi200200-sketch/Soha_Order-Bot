@@ -7,39 +7,46 @@ export default async function handler(req, res) {
   const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
   if (!TOKEN || !CHAT_ID) {
-    return res.status(500).json({ ok: false, message: "توکن یا چت آیدی تنظیم نشده است" });
+    return res.status(500).json({ ok: false, message: "توکن یا چت آیدی تنظیم نشده" });
   }
 
   const { name, phone, address, postalCode, products = [], notes } = req.body;
 
-  // تبدیل نام محصولات به نسخه مختصر
-  const normalizeProductName = (title = "") => {
-    return title
-      .replace("بسته ۵۰۰ گرمی سبز سها", "۵۰۰ گرمی سبز سها")
-      .replace("جعبه ۲۵۰ گرمی ساشه‌ی سها", "۲۵۰ گرمی ساشه")
-      .replace("بسته یک کیلویی معمولی", "یک کیلویی معمولی")
-      .replace("بسته یک کیلویی باکس پوچ", "یک کیلویی باکس پوچ")
-      .replace("بسته ۵۰۰ گرمی پاکت طلایی پنجره دار", "۵۰۰ گرمی پاکت طلایی پنجره‌دار");
+  // نام‌ های مختصر محصولات
+  const mapNames = {
+    "جعبه ۲۵۰ گرمی ساشه‌ی سها": "۲۵۰ گرمی ساشه",
+    "بسته ۵۰۰ گرم پاکت طلایی پنجره دار": "۵۰۰ گرمی پاکت طلایی",
+    "بسته یک کیلویی باکس پوچ": "۱ کیلویی باکس پوچ",
+    "بسته یک کیلویی معمولی": "۱ کیلویی معمولی",
+    "بسته ۵۰۰ گرمی سبز سها": "۵۰۰ گرمی سبز سها"
   };
 
-  // ساخت لیست سفارشات مرتب
+  // لیست سفارش‌ها
   let details = "";
   products.forEach(p => {
-    const q = Number(p.quantity || 0);
-    if (q > 0) {
-      details += `• ${q} ${p.choice || ""} ${normalizeProductName(p.title)}\n`;
+    const qty = Number(p.quantity || 0);
+    if (qty > 0) {
+      const type = p.choice === "carton" ? "کارتن" : "بسته";
+      const nameShort = mapNames[p.title] || p.title;
+      details += `• ${qty} ${type} ${nameShort}\n`;
     }
   });
 
-  if (!details.trim()) details = "- هیچ محصولی انتخاب نشده -";
+  if (!details.trim()) details = "— ثبت نشده —";
 
-  // زمان واقعی
+  // زمان دقیق
   const now = new Date();
-  const fa = new Intl.DateTimeFormat("fa-IR", { dateStyle: "full" }).format(now);
-  const time = now.toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit" });
+  const dateFa = new Intl.DateTimeFormat("fa-IR", { dateStyle: "full" }).format(now);
+  const timeFa = new Intl.DateTimeFormat("fa-IR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  }).format(now);
 
   const message = 
-`🟢 سفارش جدید ثبت شد
+`┏━━━━━━━━━━━🌿━━━━━━━━━━━┓
+       سفارش جدید ثبت شد
+┗━━━━━━━━━━━🌿━━━━━━━━━━━┛
 
 👤 نام مشتری:
 ${name || "-"}
@@ -53,16 +60,16 @@ ${address || "-"}
 📮 کد پستی:
 ${postalCode || "-"}
 
-━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━
 📦 جزئیات سفارش:
-${details}
-━━━━━━━━━━━━━━
+${details.trim()}
+━━━━━━━━━━━━━━━━━━
 
 📝 توضیحات:
 ${notes || "-"}
 
 ⏱ زمان ثبت:
-${fa} | ساعت ${time}
+${dateFa} | ساعت ${timeFa}
 `;
 
   try {
@@ -71,13 +78,13 @@ ${fa} | ساعت ${time}
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         chat_id: CHAT_ID,
-        text: message,
-        parse_mode: "HTML"
+        text: message
       })
     });
 
-    return res.status(200).json({ ok: true, message: "OK" });
-  } catch (e) {
-    return res.status(500).json({ ok: false, message: "خطا در ارسال پیام" });
+    return res.status(200).json({ ok: true, message: "✅ ارسال شد" });
+
+  } catch (error) {
+    return res.status(500).json({ ok: false, message: "خطا در ارسال", error });
   }
 }
