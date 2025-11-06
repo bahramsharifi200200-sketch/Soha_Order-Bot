@@ -1,87 +1,71 @@
-import fetch from "node-fetch";
-import moment from "moment-jalaali";
-
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ ok: false, message: "Method Not Allowed" });
   }
 
-  try {
-    const {
-      name,
-      phone,
-      address,
-      postal,
-      p250_carton,
-      p250_pack,
-      p500_gold_pack,
-      p500_gold_carton,
-      onekilo_box_pack,
-      onekilo_box_carton,
-      onekilo_simple_pack,
-      onekilo_simple_carton,
-      notes,
-    } = req.body;
+  const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+  const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
-    // توکن و چت آی‌دی که تو ویرسل گذاشتی
-    const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-    const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+  if (!TOKEN || !CHAT_ID) {
+    return res.status(500).json({ ok: false, message: "توکن یا چت آیدی تنظیم نشده است" });
+  }
 
-    // زمان شمسی دقیق
-    moment.loadPersian({usePersianDigits:true});
-    const nowDate = moment().format("jYYYY/jMM/jDD");
-    const nowPretty = moment().format("jD jMMMM jYYYY");
-    const weekday = moment().format("dddd");
-    const timeNow = moment().format("HH:mm");
+  const { name, phone, address, postalCode, products = [], notes } = req.body;
 
-    // تبدیل سفارش‌ها به مجموعه لیست مرتب
-    const orders = [];
+  // تبدیل نام محصولات به نسخه مختصر
+  const normalizeProductName = (title = "") => {
+    return title
+      .replace("بسته ۵۰۰ گرمی سبز سها", "۵۰۰ گرمی سبز سها")
+      .replace("جعبه ۲۵۰ گرمی ساشه‌ی سها", "۲۵۰ گرمی ساشه")
+      .replace("بسته یک کیلویی معمولی", "یک کیلویی معمولی")
+      .replace("بسته یک کیلویی باکس پوچ", "یک کیلویی باکس پوچ")
+      .replace("بسته ۵۰۰ گرمی پاکت طلایی پنجره دار", "۵۰۰ گرمی پاکت طلایی پنجره‌دار");
+  };
 
-    const add = (count, label) => {
-      if (count && Number(count) > 0) orders.push(`• ${count} ${label}`);
-    };
+  // ساخت لیست سفارشات مرتب
+  let details = "";
+  products.forEach(p => {
+    const q = Number(p.quantity || 0);
+    if (q > 0) {
+      details += `• ${q} ${p.choice || ""} ${normalizeProductName(p.title)}\n`;
+    }
+  });
 
-    add(p250_carton, "کارتن ۲۵۰ گرمی ساشه");
-    add(p250_pack, "بسته ۲۵۰ گرمی ساشه");
-    add(p500_gold_pack, "بسته ۵۰۰ گرمی پاکت طلایی");
-    add(p500_gold_carton, "کارتن ۵۰۰ گرمی پاکت طلایی");
-    add(onekilo_box_pack, "بسته ۱ کیلویی باکس پوچ");
-    add(onekilo_box_carton, "کارتن ۱ کیلویی باکس پوچ");
-    add(onekilo_simple_pack, "بسته ۱ کیلویی معمولی");
-    add(onekilo_simple_carton, "کارتن ۱ کیلویی معمولی");
+  if (!details.trim()) details = "- هیچ محصولی انتخاب نشده -";
 
-    const orderText = orders.length > 0 ? orders.join("\n") : "— ثبت نشده";
+  // زمان واقعی
+  const now = new Date();
+  const fa = new Intl.DateTimeFormat("fa-IR", { dateStyle: "full" }).format(now);
+  const time = now.toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit" });
 
-    // پیام نهایی **لوکس و منظم**
-    const message = `
-┏━━━━━━━━━━━━🌿━━━━━━━━━━━┓
-           🧾 سفارش جدید ثبت شد
-┗━━━━━━━━━━━━🌿━━━━━━━━━━━┛
+  const message = 
+`🟢 سفارش جدید ثبت شد
 
 👤 نام مشتری:
-${name}
+${name || "-"}
 
 📞 شماره تماس:
-${phone}
+${phone || "-"}
 
 🏠 آدرس:
-${address}
+${address || "-"}
 
 📮 کد پستی:
-${postal || "—"}
+${postalCode || "-"}
 
-━━ جزئیات سفارش ━━
-${orderText}
+━━━━━━━━━━━━━━
+📦 جزئیات سفارش:
+${details}
+━━━━━━━━━━━━━━
 
-💬 توضیحات:
-${notes || "—"}
+📝 توضیحات:
+${notes || "-"}
 
 ⏱ زمان ثبت:
-${weekday}  ${nowPretty}  /  ${nowDate}
-ساعت ${timeNow}
-    `.trim();
+${fa} | ساعت ${time}
+`;
 
-    // ارسال پیام به تلگرام
+  try {
     await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -89,13 +73,11 @@ ${weekday}  ${nowPretty}  /  ${nowDate}
         chat_id: CHAT_ID,
         text: message,
         parse_mode: "HTML"
-      }),
+      })
     });
 
-    return res.json({ ok: true, message: "Success" });
-
-  } catch (error) {
-    console.error("Error:", error);
-    return res.status(500).json({ ok: false, message: "Server Error" });
+    return res.status(200).json({ ok: true, message: "OK" });
+  } catch (e) {
+    return res.status(500).json({ ok: false, message: "خطا در ارسال پیام" });
   }
 }
