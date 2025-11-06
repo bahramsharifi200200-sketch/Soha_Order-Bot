@@ -1,73 +1,72 @@
 export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return res.status(405).json({ ok: false, message: "Method Not Allowed" });
+    return res.status(405).json({ message: "Method Not Allowed" });
   }
 
-  const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-  const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+  const { name, phone, address, postalCode, products, notes } = req.body;
 
-  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
-    return res.status(500).json({
-      ok: false,
-      message: "⚠️ TELEGRAM_BOT_TOKEN یا TELEGRAM_CHAT_ID در Vercel تنظیم نشده‌اند.",
-    });
-  }
+  const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+  const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+  const URL = `https://api.telegram.org/bot${TOKEN}/sendMessage`;
 
-  let body;
-  try {
-    body = req.body || {};
-  } catch (err) {
-    return res.status(400).json({ ok: false, message: "Bad request body" });
-  }
-
-  const { name, phone, address, postalCode, products = [], notes } = body;
-
-  // تابع ساده برای جلوگیری از مشکل کاراکترهای خاص در HTML
-  const escapeHtml = (s = "") =>
-    String(s)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;");
-
-  // ساخت لیست محصولات فقط اگر تعداد بیشتر از 0 باشد
-  let productList = "";
-  products.forEach((p) => {
-    const qty = Number(p.quantity || 0);
-    if (qty > 0) {
-      productList += `• ${escapeHtml(p.title)}\nتعداد: ${qty}\nنوع بسته‌بندی: ${escapeHtml(p.choice || "-")}\n\n`;
-    }
+  // تاریخ و زمان واقعی تهران
+  const formatter = new Intl.DateTimeFormat("fa-IR", {
+    dateStyle: "full",
+    timeStyle: "short",
+    timeZone: "Asia/Tehran"
   });
+  const datetime = formatter.format(new Date());
 
-  const text = `<b>📦 سفارش جدید ثبت شد</b>\n\n` +
-    `<b>👤 نام:</b> ${escapeHtml(name || "-")}\n` +
-    `<b>📱 شماره تماس:</b> ${escapeHtml(phone || "-")}\n` +
-    `<b>🏠 آدرس:</b> ${escapeHtml(address || "-")}\n` +
-    `<b>✉️ کد پستی:</b> ${escapeHtml(postalCode || "-")}\n\n` +
-    `<b>🍃 محصولات:</b>\n${productList ? escapeHtml(productList) : "- هیچ محصولی انتخاب نشده -"}\n` +
-    `\n<b>📝 توضیحات:</b>\n${escapeHtml(notes || "-")}`;
+  // ساخت بخش سفارشات
+  const productLines = products
+    .filter(p => p.qty > 0 || p.quantity > 0)
+    .map(p => {
+      const qty = p.qty || p.quantity;
+      const choice = p.type || p.choice;
+      return `🔹 ${qty} × ${p.name || p.title} (${choice === "carton" ? "کارتن" : "بسته"})`;
+    })
+    .join("\n");
 
-  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+  const msg = `
+╔══════════════════════╗
+   🌿 *سفارش جدید ثبت شد* 🌿
+╚══════════════════════╝
+
+👤 *نام مشتری:*  ${name}
+📱 *شماره تماس:*  ${phone}
+🏠 *آدرس:*  ${address || "—"}
+📮 *کد پستی:*  ${postalCode || "—"}
+
+━━━━━━━━━━━━━━
+
+🛒 *جزئیات سفارش:*
+${productLines || "بدون انتخاب"}
+
+━━━━━━━━━━━━━━
+
+📝 *توضیحات مشتری:*
+${notes || "—"}
+
+⏱ *زمان ثبت:*  
+${datetime}
+
+#سفارش_جدید ✅
+`.trim();
 
   try {
-    const tgRes = await fetch(url, {
+    await fetch(URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        chat_id: TELEGRAM_CHAT_ID,
-        text,
-        parse_mode: "HTML",
-      }),
+        chat_id: CHAT_ID,
+        text: msg,
+        parse_mode: "Markdown"
+      })
     });
 
-    const tgJson = await tgRes.json();
-    if (!tgJson.ok) {
-      // پاسخ تلگرام خطا داده
-      return res.status(500).json({ ok: false, message: "Telegram error: " + (tgJson.description || "unknown") });
-    }
-
-    return res.status(200).json({ ok: true, message: "✅ سفارش با موفقیت ارسال شد" });
+    return res.status(200).json({ message: "✅ سفارش با موفقیت ارسال شد" });
   } catch (err) {
-    console.error("Send to Telegram error:", err);
-    return res.status(500).json({ ok: false, message: "خطا در ارسال به تلگرام" });
+    console.log(err);
+    return res.status(500).json({ message: "❌ خطا در ارسال پیام به تلگرام" });
   }
 }
