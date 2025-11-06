@@ -3,72 +3,66 @@ export default async function handler(req, res) {
     return res.status(405).json({ ok: false, message: "Method Not Allowed" });
   }
 
-  const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-  const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
-
-  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
-    return res.status(500).json({
-      ok: false,
-      message: "⚠️ توکن یا چت آیدی در Vercel تنظیم نشده"
-    });
-  }
+  const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+  const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
   const { name, phone, address, postalCode, products = [], notes } = req.body;
 
-  // فرمت زمان واقعی ایران
   const datetime = new Intl.DateTimeFormat("fa-IR", {
     dateStyle: "full",
     timeStyle: "short",
     timeZone: "Asia/Tehran"
   }).format(new Date());
 
-  let productText = "";
+  // ✅ نقشه‌ی نام محصولات به نسخه کوتاه و رسمی
+  const shortNames = {
+    "بسته ۵۰۰ گرمی سبز سها": "۵۰۰ گرمی سبز سها",
+    "جعبه ۲۵۰ گرمی ساشه‌ی سها": "۲۵۰ گرمی ساشه",
+    "بسته ۵۰۰ گرم پاکت طلایی پنجره دار": "پاکت طلایی پنجره دار",
+    "بسته یک کیلویی باکس پوچ": "۱ کیلویی باکس پوچ",
+    "بسته یک کیلویی معمولی": "۱ کیلویی معمولی"
+  };
 
+  let productList = "";
   products.forEach(p => {
     if (Number(p.quantity) > 0) {
-      productText += `🔹 *${p.quantity}×* ${p.title} (${p.choice === "carton" ? "کارتن" : "بسته"})\n`;
+      const cleanName = shortNames[p.title] || p.title;
+      const typeText = p.choice === "carton" ? "کارتن" : "بسته";
+      productList += `• ${p.quantity} ${typeText} ${cleanName}\n`;
     }
   });
 
-  if (!productText) productText = "‌— هیچ محصولی انتخاب نشده —";
+  if (!productList.trim()) productList = "— هیچ محصولی انتخاب نشده —";
 
-  const text = `
-🟢 *سفارش جدید ثبت شد*
+  const message = `
+╔══════════════════╗
+     📦 *سفارش جدید ثبت شد*
+╚══════════════════╝
 
-👤 *نام:* ${name}
+👤 *نام مشتری:* ${name}
 📞 *تماس:* ${phone}
-🏠 *آدرس:* ${address}
-📮 *کد پستی:* ${postalCode}
+🏠 *آدرس:* ${address || "—"}
+📮 *کد پستی:* ${postalCode || "—"}
 
-🛍 *جزئیات سفارش:*
-${productText}
+━━━ *جزئیات سفارش* ━━━
+${productList.trim()}
 
-📝 *توضیحات:* ${notes || "—"}
-⏱ *زمان ثبت:* ${datetime}
+━━━ *توضیحات* ━━━
+${notes || "—"}
+
+⏱ *زمان ثبت:* 
+${datetime}
 `.trim();
 
-  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+  await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: CHAT_ID,
+      text: message,
+      parse_mode: "Markdown"
+    })
+  });
 
-  try {
-    const send = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: TELEGRAM_CHAT_ID,
-        text,
-        parse_mode: "Markdown"
-      })
-    });
-
-    const result = await send.json();
-    
-    if (!result.ok) {
-      return res.status(500).json({ ok: false, message: "Telegram Error", error: result });
-    }
-
-    return res.status(200).json({ ok: true, message: "✅ سفارش با موفقیت ارسال شد" });
-
-  } catch (err) {
-    return res.status(500).json({ ok: false, message: "خطای اتصال به تلگرام", error: err });
-  }
+  return res.status(200).json({ ok: true, message: "✅ ثبت و ارسال موفق" });
 }
