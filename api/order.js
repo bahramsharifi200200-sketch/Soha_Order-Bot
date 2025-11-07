@@ -9,61 +9,81 @@ export default async function handler(req, res) {
   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
     return res.status(500).json({
       ok: false,
-      message: "⚠️ مقادیر TELEGRAM_BOT_TOKEN و TELEGRAM_CHAT_ID تنظیم نشده‌اند.",
+      message: "⚠️ TELEGRAM_BOT_TOKEN یا TELEGRAM_CHAT_ID تنظیم نشده‌اند.",
     });
   }
 
   const { name, phone, address, postalCode, products = [], notes } = req.body || {};
 
-  // ✅ تاریخ و زمان واقعی ایران به صورت لوکس
-  const now = new Date().toLocaleString("fa-IR", {
+  // ✅ زمان واقعی ایران
+  const now = new Date();
+  const fa = new Intl.DateTimeFormat("fa-IR", {
     timeZone: "Asia/Tehran",
     weekday: "long",
     year: "numeric",
-    month: "long",
+    month: "numeric",
     day: "numeric",
     hour: "2-digit",
-    minute: "2-digit"
-  });
+    minute: "2-digit",
+  }).formatToParts(now);
+
+  let weekday = fa.find(p => p.type === "weekday")?.value || "";
+  let year = fa.find(p => p.type === "year")?.value || "";
+  let month = fa.find(p => p.type === "month")?.value || "";
+  let day = fa.find(p => p.type === "day")?.value || "";
+  let hour = fa.find(p => p.type === "hour")?.value || "";
+  let minute = fa.find(p => p.type === "minute")?.value || "";
+
+  const timeString = `${weekday}  #  ${year}/${month}/${day}  #  ساعت ${hour}:${minute}`;
+
+  // ✅ اسم کوتاه محصولات
+  const rename = (title) => {
+    return title
+      .replace("بسته ۵۰۰ گرمی سبز سها", "۵۰۰ گرمی سبز سها")
+      .replace("جعبه ۲۵۰ گرمی ساشه‌ی سها", "جعبه ۲۵۰ گرمی سها")
+      .replace("بسته یک کیلویی باکس پوچ", "یک کیلویی باکس پوچ")
+      .replace("بسته ۵۰۰ گرمی پاکت طلایی پنجره دار", "۵۰۰ گرمی پاکت طلایی")
+      .replace("بسته یک کیلویی معمولی (ساده)", "یک کیلویی معمولی");
+  };
+
+  const typeLabel = t => t === "carton" ? "کارتن" : t === "pack" ? "بسته" : "";
 
   const escape = s => String(s || "").replace(/[<&>]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
 
-  // ✅ نوع بسته‌بندی: cartن → کارتن | pack → بسته
-  const typeLabel = (t) => t === "carton" ? "کارتن" : (t === "pack" ? "بسته" : "—");
-
-  // ✅ ساخت لیست VIP محصولات
+  // ✅ لیست محصولات شیشه‌ای و مینیمال
   let productList = "";
   products.forEach((p) => {
     const qty = Number(p.quantity || 0);
     if (qty > 0) {
-      productList += `▫️ <b>${escape(p.title)}</b> — <b>${qty} ${typeLabel(p.choice)}</b>\n`;
+      productList += `◽ ${escape(rename(p.title))} — <b>${qty} ${typeLabel(p.choice)}</b>\n`;
     }
   });
-  if (!productList.trim()) productList = "— هیچ محصولی انتخاب نشده —";
+  if (!productList.trim()) productList = "— محصولی انتخاب نشده —";
 
-  // ✅ نسخه لوکس پیام
+  // ✅ پیام شیشه‌ای لوکس
   const text =
-`💎 <b>سفارش جدید مشتری</b>
+`<b>✦ سفارش جدید ثبت شد ✦</b>
 
-📍 <b>زمان ثبت:</b> ${escape(now)}
+<b>👤 مشخصات مشتری</b>
+╰ نام: <b>${escape(name)}</b>
+╰ موبایل: <b>${escape(phone)}</b>
+╰ آدرس: ${escape(address || "—")}
+╰ کد پستی: ${escape(postalCode || "—")}
 
-👤 <b>مشخصات مشتری:</b>
-• نام: <b>${escape(name)}</b>
-• موبایل: <b>${escape(phone)}</b>
-• آدرس: ${escape(address || "-")}
-• کد پستی: ${escape(postalCode || "-")}
-
-🍃 <b>اقلام سفارش:</b>
+<b>🍃 اقلام سفارش</b>
 ${productList}
 
-📝 <b>توضیحات مشتری:</b>
+<b>📝 توضیحات</b>
 ${escape(notes || "—")}
 
 ━━━━━━━━━━━━━━
-🌿 <b>سها | هدیه‌ای از دل طبیعت</b>`;
+<b>⏱ زمان ثبت سفارش</b>
+${timeString}
+
+<b>❖ سها | هدیه‌ای از دل طبیعت ❖</b>`;
 
   try {
-    const tgRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    const tg = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -73,14 +93,12 @@ ${escape(notes || "—")}
       }),
     });
 
-    const result = await tgRes.json();
-    if (!result.ok) {
-      return res.status(500).json({ ok: false, message: result.description });
-    }
+    const out = await tg.json();
+    if (!out.ok) return res.status(500).json({ ok: false, message: out.description });
 
     return res.status(200).json({ ok: true, message: "✅ سفارش با موفقیت ثبت شد" });
 
-  } catch (err) {
-    return res.status(500).json({ ok: false, message: "❌ خطا در ارتباط با تلگرام" });
+  } catch {
+    return res.status(500).json({ ok: false, message: "❌ خطا در ارسال به تلگرام" });
   }
 }
