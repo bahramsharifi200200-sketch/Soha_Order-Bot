@@ -9,75 +9,78 @@ export default async function handler(req, res) {
   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
     return res.status(500).json({
       ok: false,
-      message: "⚠️ تنظیمات ربات انجام نشده است.",
+      message: "⚠️ مقادیر TELEGRAM_BOT_TOKEN و TELEGRAM_CHAT_ID تنظیم نشده‌اند.",
     });
   }
 
   const { name, phone, address, postalCode, products = [], notes } = req.body || {};
 
-  const escape = (t = "") =>
-    String(t).replace(/</g, "&lt;").replace(/>/g, "&gt;");
-
-  // ——— ساخت تاریخ دقیق شمسی با فرمت زیبا ———
-  const now = new Date();
-  const weekday = now.toLocaleDateString("fa-IR", { weekday: "long" });
-  const day = now.toLocaleDateString("fa-IR", { day: "numeric" });
-  const month = now.toLocaleDateString("fa-IR", { month: "long" });
-  const year = now.toLocaleDateString("fa-IR", { year: "numeric" });
-  const time = now.toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit" });
-
-  const finalDate = `${weekday} ، ${day} ${month} ، ${year} / ساعت ${time}`;
-
-  // ——— ساخت لیست محصولات ———
-  let productList = "";
-  products.forEach((p) => {
-    if (Number(p.quantity) > 0) {
-      productList += `• ${escape(p.title)}\n  تعداد: ${p.quantity}\n  نوع بسته‌بندی: ${escape(p.choice || "-")}\n\n`;
-    }
+  // ✅ تاریخ و زمان واقعی ایران به صورت لوکس
+  const now = new Date().toLocaleString("fa-IR", {
+    timeZone: "Asia/Tehran",
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
   });
 
-  // ——— متن نهایی تلگرام ———
+  const escape = s => String(s || "").replace(/[<&>]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+
+  // ✅ نوع بسته‌بندی: cartن → کارتن | pack → بسته
+  const typeLabel = (t) => t === "carton" ? "کارتن" : (t === "pack" ? "بسته" : "—");
+
+  // ✅ ساخت لیست VIP محصولات
+  let productList = "";
+  products.forEach((p) => {
+    const qty = Number(p.quantity || 0);
+    if (qty > 0) {
+      productList += `▫️ <b>${escape(p.title)}</b> — <b>${qty} ${typeLabel(p.choice)}</b>\n`;
+    }
+  });
+  if (!productList.trim()) productList = "— هیچ محصولی انتخاب نشده —";
+
+  // ✅ نسخه لوکس پیام
   const text =
-`╔══════════════🌿══════════════╗
-          📦 سفارش جدید ثبت شد
-╚══════════════🌿══════════════╝
+`💎 <b>سفارش جدید مشتری</b>
 
-👤 نام مشتری:
-${escape(name || "-")}
+📍 <b>زمان ثبت:</b> ${escape(now)}
 
-📞 شماره تماس:
-${escape(phone || "-")}
+👤 <b>مشخصات مشتری:</b>
+• نام: <b>${escape(name)}</b>
+• موبایل: <b>${escape(phone)}</b>
+• آدرس: ${escape(address || "-")}
+• کد پستی: ${escape(postalCode || "-")}
 
-🏠 آدرس:
-${escape(address || "-")}
+🍃 <b>اقلام سفارش:</b>
+${productList}
 
-📮 کد پستی:
-${escape(postalCode || "-")}
-
-━━━━━━━━━━━ جزئیات سفارش ━━━━━━━━━━━
-${productList.trim() || "• هیچ محصولی ثبت نشده"}
-
-💬 توضیحات مشتری:
+📝 <b>توضیحات مشتری:</b>
 ${escape(notes || "—")}
 
-⏱ زمان ثبت سفارش:
-${finalDate}
-`;
+━━━━━━━━━━━━━━
+🌿 <b>سها | هدیه‌ای از دل طبیعت</b>`;
 
   try {
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    const tgRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         chat_id: TELEGRAM_CHAT_ID,
         text,
-        parse_mode: "Markdown",
+        parse_mode: "HTML",
       }),
     });
 
-    return res.status(200).json({ ok: true, message: "✅ سفارش ارسال شد" });
+    const result = await tgRes.json();
+    if (!result.ok) {
+      return res.status(500).json({ ok: false, message: result.description });
+    }
+
+    return res.status(200).json({ ok: true, message: "✅ سفارش با موفقیت ثبت شد" });
 
   } catch (err) {
-    return res.status(500).json({ ok: false, message: "خطای ارسال پیام به تلگرام" });
+    return res.status(500).json({ ok: false, message: "❌ خطا در ارتباط با تلگرام" });
   }
 }
