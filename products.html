@@ -1,85 +1,180 @@
 <!DOCTYPE html>
-<html lang="fa">
+<html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>آشنایی با محصولات سها</title>
+<title>محصولات نوره سُها</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;600;700&display=swap" rel="stylesheet">
+
 <style>
 body{
-  background:linear-gradient(135deg,#f1fff8,#d8ffe0);
-  font-family:IRANSans, sans-serif;
-  margin:0;padding:18px;
+  font-family:"Vazirmatn",sans-serif;
+  background:linear-gradient(135deg,#e9fff4,#d9ffea,#f7fffb);
+  margin:0;
+  padding:28px 18px;
+  color:#144d36;
   text-align:center;
 }
-h1{color:#025f38;margin-bottom:18px;}
-.products-container{display:flex;flex-direction:column;gap:24px;}
-.card{
-  background:#fff;border-radius:16px;padding:14px;
-  box-shadow:0 6px 18px rgba(0,0,0,0.12);
-  transition:.3s;overflow:hidden;
+
+h1{
+  font-size:24px;
+  font-weight:700;
+  margin-bottom:22px;
+  animation:fadeDown 1s ease;
 }
-.card:hover{transform:translateY(-4px);}
-.card img{width:100%;border-radius:12px;margin-bottom:10px;}
-.card h2{font-size:1.15rem;color:#025f38;margin:6px 0;}
-.card p{font-size:.9rem;color:#333;margin:4px 0;}
-.note{
-  margin-top:30px;font-size:.9rem;color:#444;
-  background:#fff7d1;padding:12px;border-radius:10px;
-  border:1px solid #f0e7a8;
+
+/* کارت‌ها */
+.product-card{
+  background:rgba(255,255,255,0.65);
+  backdrop-filter:blur(12px);
+  border-radius:22px;
+  padding:20px;
+  margin-bottom:32px;
+  box-shadow:0 10px 35px rgba(0,0,0,0.09);
+  transition:.35s;
+  opacity:0;
+  transform:translateY(40px);
+  animation:slideUp .9s ease forwards;
 }
-.btn-back{
-  display:inline-block;margin-top:25px;padding:12px 24px;
-  background:#0a6f42;color:#fff;border-radius:10px;
-  text-decoration:none;font-weight:600;
+
+.product-card:nth-child(1){ animation-delay:.15s; }
+.product-card:nth-child(2){ animation-delay:.35s; }
+.product-card:nth-child(3){ animation-delay:.55s; }
+.product-card:nth-child(4){ animation-delay:.75s; }
+.product-card:nth-child(5){ animation-delay:.95s; }
+
+.product-card:hover{
+  transform:translateY(-6px);
+  box-shadow:0 18px 45px rgba(0,0,0,0.14);
+}
+
+/* عکس محصول */
+.product-card img{
+  width:100%;
+  border-radius:18px;
+  margin-bottom:14px;
+  transition:transform .45s, filter .45s;
+}
+
+.product-card:hover img{
+  transform:scale(1.06);
+  filter:brightness(1.09) contrast(1.05);
+}
+
+.product-card h2{
+  font-size:19px;
+  margin-bottom:8px;
+  color:#0a6a44;
+}
+
+.product-card p{
+  font-size:14px;
+  line-height:2;
+}
+
+/* دکمه سفارش */
+.order-btn{
+  display:block;
+  width:100%;
+  padding:12px;
+  margin-top:14px;
+  border-radius:14px;
+  background:linear-gradient(135deg,#0a6f42,#07452a);
+  color:#fff;
+  font-weight:700;
+  text-decoration:none;
+  transition:.3s;
+}
+.order-btn:hover{opacity:.85;}
+
+/* نوت آخر */
+.note-box{
+  background:rgba(255,255,235,0.75);
+  backdrop-filter:blur(10px);
+  border-left:6px solid #f5d155;
+  padding:16px;
+  margin-top:34px;
+  border-radius:14px;
+  font-size:14px;
+  line-height:2;
+  animation:fadeUp 1.3s;
+}
+
+/* دکمه بازگشت */
+.back-btn{
+  display:inline-block;
+  margin-top:26px;
+  background:#0a6f42;
+  padding:13px 22px;
+  border-radius:14px;
+  color:#fff;
+  font-weight:600;
+  text-decoration:none;
+  transition:.3s;
+}
+.back-btn:hover{opacity:.85;}
+
+@keyframes slideUp{
+  from{opacity:0;transform:translateY(40px);}
+  to{opacity:1;transform:translateY(0);}
+}
+@keyframes fadeDown{
+  from{opacity:0;transform:translateY(-25px);}
+  to{opacity:1;transform:translateY(0);}
+}
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(25px);}
+  to{opacity:1;transform:translateY(0);}
 }
 </style>
 </head>
+
 <body>
 
-<h1>🌿 آشنایی با محصولات سُها</h1>
+<h1>🌿 معرفی محصولات نوره سُها</h1>
 
-<div class="products-container">
-
-<div class="card">
+<div class="product-card">
   <img src="images/product1.jpg">
-  <h2>پاکت سبز سها 500 گرمی</h2>
-  <p>وضعیت: اعلی و درمانی</p>
-  <p>تعداد در کارتن: 35 عدد</p>
-  <p>دارای پک: دستکش + چوبک + گل محمدی</p>
+  <h2>پاکت سبز سها (۵۰۰ گرمی)</h2>
+  <p>وضعیت: اعلی و درمانی<br>تعداد در کارتن: 35 عدد<br>دارای پک دستکش + چوبک + گل محمدی</p>
+  <a href="index.html#orderForm" class="order-btn">🛍 ثبت سفارش</a>
 </div>
 
-<div class="card">
+<div class="product-card">
   <img src="images/product2.jpg">
-  <h2>جعبه 250 گرمی ساشه‌ای</h2>
-  <p>4 عدد ساشه 65 گرمی</p>
-  <p>وضعیت: درمانی</p>
+  <h2>جعبه ساشه‌ای (۲۵۰ گرمی)</h2>
+  <p>۴ عدد ساشه ۶۵ گرمی<br>تعداد در کارتن: 50 عدد<br>وضعیت: اعلی و درمانی</p>
+  <a href="index.html#orderForm" class="order-btn">🛍 ثبت سفارش</a>
 </div>
 
-<div class="card">
+<div class="product-card">
   <img src="images/product3.jpg">
-  <h2>بسته باکس پوچ 1 کیلویی</h2>
-  <p>وضعیت: خوب و نسبتا درمانی</p>
+  <h2>باکس پوچ ۱ کیلویی</h2>
+  <p>وزن: ۱ کیلو<br>تعداد در کارتن: 17 عدد<br>وضعیت: خوب و نسبتا درمانی</p>
+  <a href="index.html#orderForm" class="order-btn">🛍 ثبت سفارش</a>
 </div>
 
-<div class="card">
+<div class="product-card">
   <img src="images/product4.jpg">
-  <h2>پاکت طلایی پنجره‌دار 500 گرمی</h2>
-  <p>وضعیت: متوسط و حدودا درمانی</p>
+  <h2>پاکت طلایی پنجره‌دار (۵۰۰ گرمی)</h2>
+  <p>تعداد در هر گونی: 50 عدد<br>وضعیت: متوسط و حدوداً درمانی<br>امکان بسته‌بندی داخل کارتن</p>
+  <a href="index.html#orderForm" class="order-btn">🛍 ثبت سفارش</a>
 </div>
 
-<div class="card">
+<div class="product-card">
   <img src="images/product5.jpg">
   <h2>پاکت یک کیلویی معمولی</h2>
-  <p>وضعیت: متوسط و موبری</p>
+  <p>تعداد در هر گونی: 25 عدد<br>وضعیت: متوسط و موبری<br>امکان بسته‌بندی داخل کارتن</p>
+  <a href="index.html#orderForm" class="order-btn">🛍 ثبت سفارش</a>
 </div>
 
+<div class="note-box">
+⚠️ محصولات شماره ۳, ۴ و ۵ دارای برچسب «کیمیا» هستند.<br>
+در صورت نیاز به خرید بدون برچسب لطفاً با پشتیبانی هماهنگ شود.<br>
+💚 ممنون از اعتماد شما
 </div>
 
-<div class="note">
-📌 محصولات شماره ۳، ۴ و ۵ دارای برچسب «کیمیا» هستند.<br>
-درصورت نیاز به نسخه بدون برچسب با پشتیبانی تماس بگیرید.
-</div>
-
-<a href="index.html" class="btn-back">بازگشت</a>
+<a href="index.html" class="back-btn">بازگشت</a>
 
 </body>
 </html>
