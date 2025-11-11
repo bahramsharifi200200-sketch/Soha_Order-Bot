@@ -3,230 +3,505 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>فرم ثبت سفارش محصولات طبیعی سها</title>
+<title>سفارش | نوره سُها</title>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;600;700&display=swap" rel="stylesheet">
+
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600&display=swap');
-*{box-sizing:border-box;margin:0;padding:0;font-family:'Vazirmatn',sans-serif}
-html,body{height:100%;background:#000;color:#eaeaea;-webkit-font-smoothing:antialiased}
+  :root{
+    --bg1:#e9fff4;
+    --bg2:#d9ffea;
+    --accent:#0a6f42;
+    --glass: rgba(255,255,255,0.12);
+    --glass-strong: rgba(255,255,255,0.18);
+    --muted:#9fcdb2;
+    --card-shadow: 0 10px 30px rgba(4,49,28,0.12);
+  }
 
-/* صفحه خوش‌آمد */
-.start-screen{
-  min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  text-align:center;position:relative;background:url('https://i.postimg.cc/w3rR2sLn/green-nature.jpg') no-repeat center/cover;
-}
-.start-screen::before{content:"";position:absolute;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:0}
-.start-screen *{position:relative;z-index:1}
-.start-title{font-size:1.8rem;font-weight:700;background:linear-gradient(90deg,#fff,#e0c8ff,#fff7db);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;text-shadow:0 0 12px rgba(255,255,255,0.12);opacity:0;
-  animation:fadeSlide .9s ease forwards}
-.start-sub{margin-top:12px;font-size:1.02rem;color:#fff8ee;opacity:0;animation:fadeSlide 1s ease .6s forwards}
-@keyframes fadeSlide{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-.start-buttons{margin-top:28px;display:flex;flex-direction:column;gap:12px;opacity:0;animation:fadeSlide 1s ease 1.2s forwards}
-.start-buttons button{padding:12px 22px;border-radius:12px;border:0;font-weight:600;background:linear-gradient(135deg,#c1a4ff,#ffe29f,#c1ffd7);
-  color:#111;box-shadow:0 8px 30px rgba(0,0,0,0.25);cursor:pointer}
-.start-buttons button:active{transform:translateY(1px)}
-.instagram-id{position:absolute;right:18px;bottom:14px;color:#fff;font-size:0.92rem;z-index:2}
-.instagram-id a{color:#fff;text-decoration:none;font-weight:600}
+  html,body{height:100%;margin:0;font-family:"Vazirmatn",sans-serif;background:linear-gradient(135deg,var(--bg1),var(--bg2));color:#073a2b}
+  a{text-decoration:none}
+  .container{max-width:920px;margin:0 auto;padding:20px}
 
-/* فرم سفارش */
-.form-container{display:none;min-height:100vh;align-items:center;justify-content:flex-start;padding:50px 18px 90px;
-  background:radial-gradient(circle at top,#001a12,#000)}
-form{
-  width:100%;max-width:720px;margin:0 auto;background:rgba(10,20,10,0.95);
-  border-radius:18px;padding:28px 20px;border:1px solid rgba(0,255,128,0.12);
-  box-shadow:0 10px 40px rgba(0,0,0,0.6), inset 0 0 40px rgba(0,255,128,0.02);
-}
-.welcome{text-align:center;color:#aaffd4;font-weight:700;font-size:1.4rem;line-height:1.35;margin-bottom:6px;
-  animation:fadeInWelcome .9s ease .2s both, glow 2s ease-in-out infinite alternate}
-@keyframes fadeInWelcome{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-@keyframes glow{0%{text-shadow:0 0 6px rgba(170,255,212,0.3)}100%{text-shadow:0 0 14px rgba(0,255,150,0.25)}}
-.welcome-sub{text-align:center;color:#b2f7cf;font-size:1rem;margin-bottom:14px}
+  /* ----- Start Screen ----- */
+  .start-screen{
+    display:block;
+    text-align:center;padding:18px 8px 26px;
+  }
+  .start-title{font-size:28px;color:var(--accent);font-weight:700;margin:8px 0}
+  .start-sub{color:var(--muted);margin-bottom:18px}
+  .start-buttons{display:flex;gap:12px;flex-direction:column;max-width:420px;margin:0 auto}
+  .btn{
+    display:block;padding:14px;border-radius:14px;background:linear-gradient(135deg,#0b8a5f,#0a6f42);color:white;font-weight:700;border:0;cursor:pointer;box-shadow:0 8px 20px rgba(5,74,46,0.12)
+  }
+  .btn-ghost{background:transparent;border:1px solid rgba(10,111,66,0.12);color:var(--accent)}
 
-/* 🔹 لیبل‌ها و فیلدها (اصلاح‌شده) */
-label{
-  display:flex;
-  align-items:center;
-  gap:6px;
-  color:#a8ffe2;
-  font-weight:600;
-  font-size:0.9rem;
-  margin-top:10px;
-  line-height:1.1;
-  width:100%;
-}
-.input-field,textarea.input-field{
-  width:100%;
-  padding:8px 10px;
-  border-radius:8px;
-  border:1px solid rgba(0,255,128,0.15);
-  background:rgba(255,255,255,0.05);
-  color:#eaffea;
-  margin-top:4px;
-  font-size:0.93rem;
-  line-height:1.3;
-  box-shadow:inset 0 1px 2px rgba(0,0,0,0.4);
-}
-textarea.input-field{min-height:70px}
+  /* ----- Form container ----- */
+  .form-container{
+    display:none;
+    min-height:100vh;
+    align-items:flex-start;
+    justify-content:center;
+    padding:20px;
+  }
+  form{
+    width:100%;max-width:920px;margin:0 auto;background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.02));
+    border-radius:18px;padding:22px;border:1px solid rgba(10,111,66,0.06);box-shadow:var(--card-shadow)
+  }
 
-/* بقیه استایل فرم */
-.products-section{margin-top:36px;margin-bottom:6px}
-.products-section h3{color:#80ffd4;font-weight:800;font-size:1.08rem;text-align:center;padding-top:6px}
-.product{margin-top:18px;padding:8px 6px;border-radius:10px}
-.product label{font-size:0.98rem;margin-bottom:6px;display:block;color:#cffff1}
-.product-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.qty{width:86px;padding:9px;border-radius:8px;border:1px solid rgba(0,255,128,0.12);
-  background:rgba(255,255,255,0.03);color:#e8ffea;text-align:center;font-size:0.95rem}
-.amount-options{display:flex;gap:16px;align-items:center;flex:1;justify-content:flex-start;flex-wrap:wrap}
-.amount-options input[type="checkbox"]{width:20px;height:20px;margin:0 6px 0 0;accent-color:#00e676}
-.amount-options label{font-size:0.9rem;color:#c8ffc8;display:flex;align-items:center;gap:6px}
-.big-gap{margin-top:28px}
-.description{margin-top:28px;margin-bottom:22px}
-.btn{display:block;width:100%;padding:14px;border-radius:12px;border:0;font-weight:700;
-  margin-top:14px;font-size:1.02rem;cursor:pointer;transition:0.3s}
-.btn-primary{background:linear-gradient(135deg,#00e676,#00c853);color:#06120b}
-.btn-whatsapp{background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;text-align:center;text-decoration:none;margin-top:20px}
-.btn:hover{opacity:0.9}
-.btn-products{
-  display:block;
-  width:100%;
-  padding:14px;
-  border-radius:12px;
-  background:linear-gradient(135deg,#1b8f59,#0a4d2f);
-  color:#fff;
-  text-align:center;
-  font-weight:700;
-  text-decoration:none;
-  margin-top:12px;
-  transition:0.3s;
-}
-.btn-products:hover{
-  opacity:0.9;
-}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  label{display:block;color:#bfe9d1;font-weight:600;margin-bottom:8px}
+  .input-field{width:100%;padding:12px;border-radius:12px;border:1px solid rgba(10,111,66,0.12);background:transparent;color:#dbfff0;box-shadow:inset 0 1px 0 rgba(255,255,255,0.02)}
+  textarea.input-field{min-height:90px;resize:vertical}
 
+  .section-title{font-size:18px;color:var(--accent);margin:18px 0 12px;font-weight:700;text-align:center}
+
+  /* ----- products section (in-form) ----- */
+  .products-section{margin-top:8px}
+  .product{
+    background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));
+    border-radius:14px;padding:16px;margin-bottom:14px;border:1px solid rgba(255,255,255,0.03);
+    display:flex;gap:14px;align-items:center;justify-content:space-between;
+  }
+  .product .info{flex:1}
+  .product label{font-size:16px;color:#e8ffee;margin-bottom:6px}
+  .product .meta{color:var(--muted);font-size:13px;margin-bottom:6px}
+  .options{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+
+  .qty{width:110px;padding:10px;border-radius:10px;background:transparent;border:1px solid rgba(255,255,255,0.04);color:#eafff5}
+
+  .choice{display:flex;align-items:center;gap:8px;color:#e8ffee}
+  .choice input{width:20px;height:20px;border-radius:4px}
+
+  /* product highlight when coming from product card */
+  .product.highlight{box-shadow:0 18px 40px rgba(10,111,66,0.14);outline:2px solid rgba(10,111,66,0.06)}
+
+  /* submit */
+  .actions{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:16px}
+  .btn-primary{background:linear-gradient(135deg,#1b8f59,#0a6f42);color:#fff;padding:12px 18px;border-radius:12px;border:0;font-weight:700;cursor:pointer}
+  .btn-whatsapp{background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;padding:12px 18px;border-radius:12px;border:0;font-weight:700;cursor:pointer}
+
+  /* ----- Products showcase (lux cards) ----- */
+  .products-showcase{margin-top:28px}
+  .card{
+    background:rgba(255,255,255,0.65);backdrop-filter:blur(12px);border-radius:18px;padding:12px;margin-bottom:20px;box-shadow:0 10px 35px rgba(0,0,0,0.08);transition:.35s;overflow:hidden;
+  }
+  .card:hover{transform:translateY(-6px);box-shadow:0 18px 45px rgba(0,0,0,0.14)}
+  .card img{width:100%;border-radius:12px;margin-bottom:10px;display:block}
+  .card h3{color:#044f36;margin:6px 0;font-size:18px}
+  .card p{color:var(--muted);margin:0 0 8px;font-size:14px}
+  .card .card-btn{display:block;padding:12px;border-radius:12px;background:linear-gradient(135deg,#0a6f42,#07452a);color:#fff;text-align:center;font-weight:700}
+
+  /* stagger animations */
+  .card{opacity:0;transform:translateY(28px);animation:cardIn .9s forwards ease}
+  .card:nth-child(1){animation-delay:.15s}
+  .card:nth-child(2){animation-delay:.35s}
+  .card:nth-child(3){animation-delay:.55s}
+  .card:nth-child(4){animation-delay:.75s}
+  .card:nth-child(5){animation-delay:.95s}
+  @keyframes cardIn{to{opacity:1;transform:translateY(0)}}
+
+  /* ----- Confirm modal (premium glass) ----- */
+  .modal-overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.55));z-index:9999}
+  .modal{
+    width:92%;max-width:520px;background:rgba(255,255,255,0.08);backdrop-filter:blur(20px) saturate(140%);
+    border-radius:18px;padding:20px;border:1px solid rgba(0,255,150,0.12);box-shadow:0 10px 50px rgba(0,255,150,0.06);color:#eafff0;text-align:center
+  }
+  .modal h2{color:#c8fff0;margin:8px 0}
+  .modal pre{white-space:pre-wrap;text-align:right;direction:rtl;color:#e6fff5;line-height:1.9;font-size:14px}
+  .modal .confirm-actions{display:flex;gap:12px;margin-top:16px;justify-content:center}
+  .btn-confirm{flex:1;padding:12px;border-radius:12px;border:0;background:linear-gradient(135deg,#00f59d,#00b56d);color:#023a24;font-weight:800;cursor:pointer}
+  .btn-cancel{flex:1;padding:12px;border-radius:12px;border:0;background:rgba(255,255,255,0.12);color:#fff;cursor:pointer}
+
+  /* success toast */
+  .toast{
+    position:fixed;left:50%;transform:translateX(-50%);bottom:-120px;background:linear-gradient(135deg,#14c67b,#0a8b50);color:#fff;padding:12px 22px;border-radius:14px;box-shadow:0 10px 30px rgba(10,120,70,0.18);z-index:99999;transition:all .45s
+  }
+  .toast.show{bottom:32px}
+
+  /* responsive */
+  @media (min-width:740px){
+    .product{padding:18px}
+    .row{gap:18px}
+    .start-buttons{flex-direction:row;justify-content:center}
+    .products-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+  }
 </style>
 </head>
 <body>
 
-<!-- صفحه اول -->
-<div class="start-screen" id="startScreen">
-  <h1 class="start-title">به دنیای محصولات طبیعی سها خوش آمدید 🌿</h1>
-  <div class="start-sub">سها، نوری از دل طبیعت است که سلامتی را چون نسیم بر جان می‌نشاند ✨</div>
-  <div class="start-buttons">
-  <button onclick="showForm()">ورود به فرم ثبت سفارش</button>
-  <a href="products.html" class="btn-products">آشنایی با محصولات</a>
-</div>
+<div class="container">
 
-  <div class="instagram-id">ارتباط با سازنده؛ <a href="https://www.instagram.com/bahram_sh321" target="_blank">bahram_sh321@</a></div>
-</div>
+  <!-- START SCREEN -->
+  <section class="start-screen" id="startScreen">
+    <h1 class="start-title">🌿 خوش آمدید — محصولات طبیعی نوره سُها</h1>
+    <div class="start-sub">طبیعی، درمانی و اصیل — برای سفارش از دکمه زیر استفاده کنید</div>
 
-<!-- فرم سفارش -->
-<div class="form-container" id="orderForm" style="display:none">
-  <form id="mainForm">
-    <div class="welcome">🌿 به بخش ثبت سفارش محصولات طبیعی<br>💁 سها خوش آمدید</div>
-    <div class="welcome-sub">لطفا اطلاعات خود و جزئیات سفارش‌تان را دقیق وارد کنید</div>
+    <div class="start-buttons">
+      <button class="btn" onclick="openForm()">ورود به فرم ثبت سفارش</button>
+      <button class="btn btn-ghost" onclick="showProducts()">آشنایی با محصولات</button>
+    </div>
+  </section>
 
-    <label>👤 نام و نام خانوادگی</label>
-    <input class="input-field" id="name" type="text" required>
+  <!-- ORDER FORM -->
+  <section id="orderFormSection" class="form-container" style="display:none">
+    <form id="mainForm">
+      <div style="display:flex;justify-content:center">
+        <h2 class="section-title">🛒 فرم ثبت سفارش</h2>
+      </div>
 
-    <label>📱 شماره تماس</label>
-    <input class="input-field" id="phone" type="tel" required>
+      <div class="row">
+        <div style="flex:1;min-width:220px">
+          <label>👤 نام و نام خانوادگی</label>
+          <input id="name" class="input-field" type="text" required>
+        </div>
+        <div style="flex:1;min-width:220px">
+          <label>📱 شماره تماس</label>
+          <input id="phone" class="input-field" type="tel" required>
+        </div>
+      </div>
 
-    <label>🏠 آدرس کامل</label>
-    <textarea class="input-field" id="address"></textarea>
+      <div style="margin-top:12px">
+        <label>🏠 آدرس کامل</label>
+        <textarea id="address" class="input-field"></textarea>
+      </div>
 
-    <label>✉️ کد پستی</label>
-    <input class="input-field" id="postalCode" type="text">
+      <div style="margin-top:12px">
+        <label>✉️ کد پستی</label>
+        <input id="postalCode" class="input-field" type="text">
+      </div>
 
-    <div class="products-section">
-      <h3>🍵 بخش انتخاب محصول (نوره سها)</h3>
+      <!-- Products selection (each product has qty + two choices: carton / pack) -->
+      <div class="products-section">
+        <h3 class="section-title">☕ بخش انتخاب محصول (نوره سها)</h3>
 
-      <div class="product"><label>🟢 بسته ۵۰۰ گرمی سبز سها</label>
-        <div class="product-row"><input class="qty" type="number" min="0" placeholder="تعداد">
-          <div class="amount-options"><label><input type="checkbox" data-choice="carton">کارتن</label>
-          <label><input type="checkbox" data-choice="pack">بسته</label></div></div></div>
+        <!-- Product 1 -->
+        <div class="product" data-product="بسته ۵۰۰ گرمی سبز سِها" id="prod-1">
+          <div class="info">
+            <label>بسته ۵۰۰ گرمی سبز سِها</label>
+            <div class="meta">وضعیت: اعلی و درمانی — تعداد در کارتن: 35 عدد</div>
+            <div class="options">
+              <label class="choice"><input type="checkbox" data-choice="carton"> کارتن</label>
+              <label class="choice"><input type="checkbox" data-choice="pack"> بسته</label>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+            <input class="qty" id="qty-1" type="number" min="0" placeholder="تعداد" />
+            <button type="button" class="btn" onclick="scrollToProduct('prod-1')">🔎 محل محصول</button>
+          </div>
+        </div>
 
-      <div class="product"><label>🟡 جعبه ۲۵۰ گرمی ساشه‌ی سها</label>
-        <div class="product-row"><input class="qty" type="number" min="0" placeholder="تعداد">
-          <div class="amount-options"><label><input type="checkbox" data-choice="carton">کارتن</label>
-          <label><input type="checkbox" data-choice="pack">بسته</label></div></div></div>
+        <!-- Product 2 -->
+        <div class="product" data-product="جعبه ۲۵۰ گرمی ساشه‌ای سِها" id="prod-2">
+          <div class="info">
+            <label>جعبه ۲۵۰ گرمی ساشه‌ای سِها</label>
+            <div class="meta">۴ عدد ساشه ۶۵ گرمی — تعداد در کارتن: 50</div>
+            <div class="options">
+              <label class="choice"><input type="checkbox" data-choice="carton"> کارتن</label>
+              <label class="choice"><input type="checkbox" data-choice="pack"> بسته</label>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+            <input class="qty" id="qty-2" type="number" min="0" placeholder="تعداد" />
+            <button type="button" class="btn" onclick="scrollToProduct('prod-2')">🔎 محل محصول</button>
+          </div>
+        </div>
 
-      <div class="product"><label>🟤 بسته یک کیلویی باکس پوچ</label>
-        <div class="product-row"><input class="qty" type="number" min="0" placeholder="تعداد">
-          <div class="amount-options"><label><input type="checkbox" data-choice="carton">کارتن</label>
-          <label><input type="checkbox" data-choice="pack">بسته</label></div></div></div>
+        <!-- Product 3 -->
+        <div class="product" data-product="بسته یک کیلویی باکس پوج" id="prod-3">
+          <div class="info">
+            <label>بسته یک کیلویی باکس پوج</label>
+            <div class="meta">وزن: ۱ کیلو — در کارتن: 17 عدد — وضعیت: نسبتا درمانی</div>
+            <div class="options">
+              <label class="choice"><input type="checkbox" data-choice="carton"> کارتن</label>
+              <label class="choice"><input type="checkbox" data-choice="pack"> بسته</label>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+            <input class="qty" id="qty-3" type="number" min="0" placeholder="تعداد" />
+            <button type="button" class="btn" onclick="scrollToProduct('prod-3')">🔎 محل محصول</button>
+          </div>
+        </div>
 
-      <div class="product"><label>✨ بسته ۵۰۰ گرمی پاکت طلایی پنجره دار</label>
-        <div class="product-row"><input class="qty" type="number" min="0" placeholder="تعداد">
-          <div class="amount-options"><label><input type="checkbox" data-choice="carton">کارتن</label>
-          <label><input type="checkbox" data-choice="pack">بسته</label></div></div></div>
+        <!-- Product 4 -->
+        <div class="product" data-product="پاکت طلایی پنجره‌دار (۵۰۰ گرمی)" id="prod-4">
+          <div class="info">
+            <label>پاکت طلایی پنجره‌دار (۵۰۰ گرمی)</label>
+            <div class="meta">در هر گونی: 50 — وضعیت: متوسط، حدودا درمانی</div>
+            <div class="options">
+              <label class="choice"><input type="checkbox" data-choice="carton"> کارتن</label>
+              <label class="choice"><input type="checkbox" data-choice="pack"> بسته</label>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+            <input class="qty" id="qty-4" type="number" min="0" placeholder="تعداد" />
+            <button type="button" class="btn" onclick="scrollToProduct('prod-4')">🔎 محل محصول</button>
+          </div>
+        </div>
 
-      <div class="product"><label>⚪ بسته یک کیلویی معمولی (ساده)</label>
-        <div class="product-row"><input class="qty" type="number" min="0" placeholder="تعداد">
-          <div class="amount-options"><label><input type="checkbox" data-choice="carton">کارتن</label>
-          <label><input type="checkbox" data-choice="pack">بسته</label></div></div></div>
+        <!-- Product 5 -->
+        <div class="product" data-product="پاکت یک کیلویی معمولی" id="prod-5">
+          <div class="info">
+            <label>پاکت یک کیلویی معمولی</label>
+            <div class="meta">در هر گونی: 25 — وضعیت: متوسط، موبری</div>
+            <div class="options">
+              <label class="choice"><input type="checkbox" data-choice="carton"> کارتن</label>
+              <label class="choice"><input type="checkbox" data-choice="pack"> بسته</label>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+            <input class="qty" id="qty-5" type="number" min="0" placeholder="تعداد" />
+            <button type="button" class="btn" onclick="scrollToProduct('prod-5')">🔎 محل محصول</button>
+          </div>
+        </div>
+
+      </div><!-- end products-section -->
+
+      <div style="margin-top:14px">
+        <label>🗒 توضیحات اضافی (اختیاری)</label>
+        <textarea id="notes" class="input-field"></textarea>
+      </div>
+
+      <div class="actions">
+        <button type="submit" class="btn-primary">ثبت و ارسال سفارش</button>
+        <a class="btn-whatsapp" href="https://wa.me/989307122660" target="_blank">💬 سفارش از طریق واتساپ</a>
+        <button type="button" class="btn btn-ghost" onclick="showProducts()">آشنایی با محصولات</button>
+      </div>
+
+    </form>
+  </section>
+
+  <!-- PRODUCTS SHOWCASE (separate section in same page) -->
+  <section id="productsShowcase" class="products-showcase" style="display:none">
+    <h2 class="section-title">🌿 معرفی محصولات نوره سُها</h2>
+    <div class="products-grid">
+      <div class="card">
+        <img src="images/product1.jpg" alt="">
+        <h3>بسته ۵۰۰ گرمی سبز سِها</h3>
+        <p>وضعیت: اعلی و درمانی — دارای پک: دستکش + چوبک + گل محمدی</p>
+        <button class="card-btn" onclick="orderFromShow('prod-1')">🛍 ثبت سفارش</button>
+      </div>
+
+      <div class="card">
+        <img src="images/product2.jpg" alt="">
+        <h3>جعبه ۲۵۰ گرمی ساشه‌ای سِها</h3>
+        <p>۴ ساشه × ۶۵ گرم — وضعیت: اعلی و درمانی</p>
+        <button class="card-btn" onclick="orderFromShow('prod-2')">🛍 ثبت سفارش</button>
+      </div>
+
+      <div class="card">
+        <img src="images/product3.jpg" alt="">
+        <h3>بسته یک کیلویی باکس پوج</h3>
+        <p>یک کیلو — مناسب بسته‌بندی عمده</p>
+        <button class="card-btn" onclick="orderFromShow('prod-3')">🛍 ثبت سفارش</button>
+      </div>
+
+      <div class="card">
+        <img src="images/product4.jpg" alt="">
+        <h3>پاکت طلایی پنجره‌دار (۵۰۰ گرمی)</h3>
+        <p>در هر گونی: 50 — امکان بسته‌بندی داخل کارتن</p>
+        <button class="card-btn" onclick="orderFromShow('prod-4')">🛍 ثبت سفارش</button>
+      </div>
+
+      <div class="card">
+        <img src="images/product5.jpg" alt="">
+        <h3>پاکت یک کیلویی معمولی</h3>
+        <p>در هر گونی: 25 — وضعیت: متوسط و موبری</p>
+        <button class="card-btn" onclick="orderFromShow('prod-5')">🛍 ثبت سفارش</button>
+      </div>
     </div>
 
-    <label>📝 توضیحات (اختیاری)</label>
-    <textarea class="input-field" id="notes"></textarea>
+    <div style="text-align:center;margin-top:18px">
+      <button class="btn btn-ghost" onclick="hideProducts()">بازگشت به فرم</button>
+    </div>
+  </section>
 
-    <button class="btn btn-primary" type="submit">📦 ثبت و ارسال سفارش</button>
-    <a href="https://wa.me/989037122660" target="_blank" class="btn btn-whatsapp">💬 پشتیبانی واتساپ</a>
-  </form>
+  <!-- Note -->
+  <div style="margin-top:22px">
+    <div style="background:rgba(255,255,235,0.75);padding:12px;border-radius:12px;color:#264b36;border-left:6px solid #f5d155">
+      ⚠️ محصولات شماره ۳، ۴ و ۵ دارای برچسب «کیمیا» می‌باشند. در صورت نیاز به سفارش بدون برچسب لطفاً با پشتیبانی هماهنگ کنید.
+    </div>
+  </div>
+
+</div> <!-- end container -->
+
+<!-- ======== Confirm Modal (Premium Glass) ======== -->
+<div id="confirmModal" class="modal-overlay">
+  <div class="modal" role="dialog" aria-modal="true">
+    <h2>تایید نهایی سفارش 🌿</h2>
+    <pre id="orderSummary">...</pre>
+    <div class="confirm-actions">
+      <button id="confirmSend" class="btn-confirm">✅ تایید و ارسال</button>
+      <button id="cancelConfirm" class="btn-cancel">✖ بازگشت و ویرایش</button>
+    </div>
+  </div>
 </div>
 
+<!-- success toast -->
+<div id="successToast" class="toast">✅ سفارش با موفقیت ثبت شد 🌿</div>
+
 <script>
-function showForm(){
-  document.getElementById('startScreen').style.display='none';
-  document.getElementById('orderForm').style.display='flex';
-}
+  // --- helpers & element refs ---
+  const startScreen = document.getElementById('startScreen');
+  const orderFormSection = document.getElementById('orderFormSection');
+  const productsShowcase = document.getElementById('productsShowcase');
+  const confirmModal = document.getElementById('confirmModal');
+  const orderSummaryEl = document.getElementById('orderSummary');
+  const confirmSend = document.getElementById('confirmSend');
+  const cancelConfirm = document.getElementById('cancelConfirm');
+  const successToast = document.getElementById('successToast');
+  const mainForm = document.getElementById('mainForm');
 
-// جلوگیری از تیک خوردن همزمان
-document.addEventListener('change', (e)=>{
-  if(e.target.type==='checkbox'){
-    const group=e.target.closest('.product');
-    if(group){
-      group.querySelectorAll('input[type="checkbox"]').forEach(c=>{if(c!==e.target)c.checked=false;});
-    }
+  const nameField = document.getElementById('name');
+  const phoneField = document.getElementById('phone');
+  const addressField = document.getElementById('address');
+  const notesField = document.getElementById('notes');
+
+  // Show/hide
+  function openForm(){ startScreen.style.display='none'; orderFormSection.style.display='flex'; window.scrollTo({top:0,behavior:'smooth'}); }
+  function showProducts(){ productsShowcase.style.display='block'; orderFormSection.style.display='none'; startScreen.style.display='none'; window.scrollTo({top:0,behavior:'smooth'}); }
+  function hideProducts(){ productsShowcase.style.display='none'; orderFormSection.style.display='flex'; window.scrollTo({top:0,behavior:'smooth'}); }
+
+  // Scroll to product block + highlight
+  function scrollToProduct(prodId){
+    // Open form if not visible
+    if(orderFormSection.style.display==='none'){ orderFormSection.style.display='flex'; productsShowcase.style.display='none'; startScreen.style.display='none'; }
+    const el=document.getElementById(prodId);
+    if(!el) return;
+    el.scrollIntoView({behavior:'smooth',block:'center'});
+    el.classList.add('highlight');
+    setTimeout(()=>el.classList.remove('highlight'),2200);
   }
-});
 
-// ارسال به API
-document.getElementById('mainForm').addEventListener('submit', async (e)=>{
-  e.preventDefault();
+  // Called when clicking "ثبت سفارش" on product card in showcase
+  function orderFromShow(prodId){
+    // show form and set default qty to 1
+    hideProducts();
+    const qtyEl=document.querySelector(`#${prodId} .qty`);
+    if(qtyEl){ qtyEl.value = qtyEl.value && Number(qtyEl.value) > 0 ? qtyEl.value : 1; }
+    // also auto-select pack by default when coming from showcase
+    const productEl = document.getElementById(prodId);
+    if(productEl){
+      const packChoice = productEl.querySelector('input[data-choice="pack"]');
+      if(packChoice) packChoice.checked = true;
+      // ensure only one checkbox remains checked within that product
+      productEl.querySelectorAll('input[type="checkbox"]').forEach((cb)=>{
+        cb.addEventListener('change', ()=> {
+          productEl.querySelectorAll('input[type="checkbox"]').forEach(c=>{ if(c!==cb) c.checked=false; });
+        });
+      });
+      productEl.scrollIntoView({behavior:'smooth',block:'center'});
+      productEl.classList.add('highlight');
+      setTimeout(()=>productEl.classList.remove('highlight'),2000);
+    }
+    // make form visible
+    orderFormSection.style.display='flex';
+  }
 
-  const name=document.getElementById('name').value.trim();
-  const phone=document.getElementById('phone').value.trim();
-  const address=document.getElementById('address').value.trim();
-  const postalCode=document.getElementById('postalCode').value.trim();
-  const notes=document.getElementById('notes').value.trim();
-
-  const products=[...document.querySelectorAll('.product')].map(p=>{
-    const title=p.querySelector('label').innerText;
-    // اگر مقدار خالی است 0 در نظر بگیر
-    const qtyVal = p.querySelector('.qty').value;
-    const qty = qtyVal === "" ? 0 : Number(qtyVal);
-    const checked=p.querySelector('input[type="checkbox"]:checked');
-    return {title,quantity:qty,choice:checked?checked.dataset.choice:null};
+  // Ensure only one choice per product (carton or pack)
+  document.addEventListener('change',(e)=>{
+    if(e.target.matches('.product input[type="checkbox"]')){
+      const product = e.target.closest('.product');
+      if(!product) return;
+      product.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
+        if(cb!==e.target) cb.checked=false;
+      });
+    }
   });
 
-  const payload={name,phone,address,postalCode,products,notes};
+  // Build order summary and show confirm modal
+  mainForm.addEventListener('submit', (ev)=>{
+    ev.preventDefault();
 
-  try{
-    const res=await fetch('/api/order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-    const data=await res.json();
-    if(!res.ok){
-      alert(data.message || '❌ خطا در ارسال سفارش');
-    } else {
-      alert(data.message || 'سفارش ثبت شد ✅');
-      if(data.ok) e.target.reset();
-      // برگرد به صفحه شروع (اختیاری)
-      document.getElementById('orderForm').style.display='none';
-      document.getElementById('startScreen').style.display='flex';
+    const name = nameField.value.trim() || '—';
+    const phone = phoneField.value.trim() || '—';
+    const address = addressField.value.trim() || '—';
+    const notes = notesField.value.trim() || '—';
+
+    // collect products
+    const products = Array.from(document.querySelectorAll('.product')).map(prod=>{
+      const title = prod.dataset.product || (prod.querySelector('label')?.innerText || 'محصول');
+      const qty = Number(prod.querySelector('.qty')?.value || 0);
+      const choice = prod.querySelector('input[type="checkbox"]:checked')?.dataset.choice || null;
+      if(qty>0) return {title,qty,choice};
+      return null;
+    }).filter(Boolean);
+
+    if(products.length === 0){
+      alert('لطفاً حداقل یک محصول را انتخاب نموده و تعداد را وارد کنید.');
+      return;
     }
-  }catch(err){
-    console.error(err);
-    alert('❌ خطا در ارتباط با سرور');
-  }
-});
-</script>
 
+    // create summary string
+    let prodLines = products.map(p=>{
+      const typeText = p.choice === 'carton' ? 'کارتن' : (p.choice === 'pack' ? 'بسته' : 'نوع: —');
+      return `• ${p.title} — ${p.qty} عدد  /  (${typeText})`;
+    }).join('\n');
+
+    const summary = `🧍 نام: ${name}\n📞 تماس: ${phone}\n\n🛍 سفارش:\n${prodLines}\n\n🏠 آدرس:\n${address}\n\n🗒 توضیحات:\n${notes}`;
+
+    orderSummaryEl.innerText = summary;
+    confirmModal.style.display = 'flex';
+  });
+
+  // Confirm & send
+  confirmSend.addEventListener('click', async ()=>{
+    confirmModal.style.display = 'none';
+
+    // assemble payload
+    const payload = {
+      name: nameField.value.trim(),
+      phone: phoneField.value.trim(),
+      address: addressField.value.trim(),
+      postalCode: document.getElementById('postalCode')?.value?.trim() || '',
+      notes: notesField.value.trim(),
+      products: Array.from(document.querySelectorAll('.product')).map(prod=>{
+        const title = prod.dataset.product || (prod.querySelector('label')?.innerText || 'محصول');
+        const qty = Number(prod.querySelector('.qty')?.value || 0);
+        const choice = prod.querySelector('input[type="checkbox"]:checked')?.dataset.choice || null;
+        return {title, quantity: qty, choice};
+      }).filter(p=>p.quantity>0)
+    };
+
+    try {
+      const resp = await fetch('/api/order', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+      });
+
+      const result = await resp.json().catch(()=>({ok:false}));
+      if(result.ok || resp.status === 200){
+        // success
+        // show toast
+        successToast.classList.add('show');
+        successToast.classList.add('show'); // ensure class
+        successToast.style.bottom = '32px';
+        setTimeout(()=>{ successToast.style.bottom = '-120px'; }, 2600);
+
+        // reset only product selections and notes (name/phone kept for convenience)
+        document.querySelectorAll('.qty').forEach(i=>i.value='');
+        document.querySelectorAll('.product input[type="checkbox"]').forEach(cb=>cb.checked=false);
+        notesField.value = '';
+      } else {
+        alert('❌ ثبت سفارش ناموفق بود — لطفاً مجدداً تلاش کنید.');
+      }
+    } catch (err){
+      console.error(err);
+      alert('❌ خطا در برقراری ارتباط — لطفا اتصال اینترنت خود را بررسی کنید.');
+    }
+  });
+
+  // Cancel confirm
+  cancelConfirm.addEventListener('click', ()=>{ confirmModal.style.display='none'; });
+
+  // Close modal when clicking outside content
+  confirmModal.addEventListener('click', (e)=>{ if(e.target === confirmModal) confirmModal.style.display='none'; });
+
+  // small utility: keyboard enter inside qty won't submit suddenly because we preventDefault on form submission above
+  // but allow pressing ESC to close confirm modal:
+  document.addEventListener('keydown',(e)=>{ if(e.key==='Escape'){ confirmModal.style.display='none'; } });
+
+  // initial quick behaviour: if user navigated directly to page, show start screen. If they click start -> form shows.
+  // nothing more to do
+</script>
+</body>
+</html>
