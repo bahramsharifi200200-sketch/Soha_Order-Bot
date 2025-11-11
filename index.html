@@ -42,7 +42,7 @@ form{
 @keyframes glow{0%{text-shadow:0 0 6px rgba(170,255,212,0.3)}100%{text-shadow:0 0 14px rgba(0,255,150,0.25)}}
 .welcome-sub{text-align:center;color:#b2f7cf;font-size:1rem;margin-bottom:14px}
 
-/* فیلدها */
+/* 🔹 لیبل‌ها و فیلدها (اصلاح‌شده) */
 label{
   display:flex;
   align-items:center;
@@ -68,6 +68,7 @@ label{
 }
 textarea.input-field{min-height:70px}
 
+/* بقیه استایل فرم */
 .products-section{margin-top:36px;margin-bottom:6px}
 .products-section h3{color:#80ffd4;font-weight:800;font-size:1.08rem;text-align:center;padding-top:6px}
 .product{margin-top:18px;padding:8px 6px;border-radius:10px}
@@ -85,6 +86,22 @@ textarea.input-field{min-height:70px}
 .btn-primary{background:linear-gradient(135deg,#00e676,#00c853);color:#06120b}
 .btn-whatsapp{background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;text-align:center;text-decoration:none;margin-top:20px}
 .btn:hover{opacity:0.9}
+.btn-products{
+  display:block;
+  width:100%;
+  padding:14px;
+  border-radius:12px;
+  background:linear-gradient(135deg,#1b8f59,#0a4d2f);
+  color:#fff;
+  text-align:center;
+  font-weight:700;
+  text-decoration:none;
+  margin-top:12px;
+  transition:0.3s;
+}
+.btn-products:hover{
+  opacity:0.9;
+}
 </style>
 </head>
 <body>
@@ -95,7 +112,7 @@ textarea.input-field{min-height:70px}
   <div class="start-sub">سها، نوری از دل طبیعت است که سلامتی را چون نسیم بر جان می‌نشاند ✨</div>
   <div class="start-buttons">
     <button onclick="showForm()">ورود به فرم ثبت سفارش</button>
-    <button>آشنایی با محصولات</button>
+  <a href="products.html">آشنایی با محصولات</a>
   </div>
   <div class="instagram-id">ارتباط با سازنده؛ <a href="https://www.instagram.com/bahram_sh321" target="_blank">bahram_sh321@</a></div>
 </div>
@@ -161,6 +178,7 @@ function showForm(){
   document.getElementById('orderForm').style.display='flex';
 }
 
+// جلوگیری از تیک خوردن همزمان
 document.addEventListener('change', (e)=>{
   if(e.target.type==='checkbox'){
     const group=e.target.closest('.product');
@@ -170,91 +188,43 @@ document.addEventListener('change', (e)=>{
   }
 });
 
+// ارسال به API
 document.getElementById('mainForm').addEventListener('submit', async (e)=>{
   e.preventDefault();
 
   const name=document.getElementById('name').value.trim();
   const phone=document.getElementById('phone').value.trim();
   const address=document.getElementById('address').value.trim();
+  const postalCode=document.getElementById('postalCode').value.trim();
   const notes=document.getElementById('notes').value.trim();
 
   const products=[...document.querySelectorAll('.product')].map(p=>{
     const title=p.querySelector('label').innerText;
-    const qtyVal=p.querySelector('.qty').value;
-    const qty=qtyVal===""?0:Number(qtyVal);
+    // اگر مقدار خالی است 0 در نظر بگیر
+    const qtyVal = p.querySelector('.qty').value;
+    const qty = qtyVal === "" ? 0 : Number(qtyVal);
     const checked=p.querySelector('input[type="checkbox"]:checked');
-    return qty>0?`${title} - ${qty} عدد (${checked?checked.dataset.choice:'بدون انتخاب'})`:null;
-  }).filter(Boolean);
+    return {title,quantity:qty,choice:checked?checked.dataset.choice:null};
+  });
 
-  const summary=`
-  <div class='confirm-box'>
-    <h3>تأیید نهایی سفارش 🌿</h3>
-    <p><strong>نام:</strong> ${name}</p>
-    <p><strong>تماس:</strong> ${phone}</p>
-    <p><strong>آدرس:</strong> ${address}</p>
-    <p><strong>سفارشات:</strong><br>${products.join('<br>')}</p>
-    <p><strong>توضیحات:</strong> ${notes||'ندارد'}</p>
-    <div class='confirm-actions'>
-      <button id='confirmSend' class='btn btn-primary'>✅ تأیید و ارسال</button>
-      <button id='cancelConfirm' class='btn' style='background:#333;color:#eee'>❌ بازگشت و ویرایش</button>
-    </div>
-  </div>`;
+  const payload={name,phone,address,postalCode,products,notes};
 
-  showModal(summary);
-
-  document.getElementById('confirmSend').onclick=async()=>{
-    try{
-      const payload={name,phone,address,products,notes};
-      const res=await fetch('/api/order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-      const data=await res.json();
-
-      if(res.ok){
-        showModal(`<div class='success-box'>✅ سفارش شما با موفقیت ثبت و ارسال شد.<br>به‌زودی کارشناسان ما با شما تماس خواهند گرفت.<br><span>از اعتماد شما سپاسگزاریم.</span></div>`);
-        e.target.reset();
-        setTimeout(()=>{closeModal();document.getElementById('orderForm').style.display='none';document.getElementById('startScreen').style.display='flex';},3500);
-      }else{
-        showModal(`<div class='error-box'>❌ ${data.message||'خطا در ارسال سفارش. لطفاً مجدداً تلاش فرمایید.'}</div>`);
-      }
-    }catch(err){
-      showModal(`<div class='error-box'>⚠️ خطا در ارتباط با سرور. لطفاً بعداً دوباره امتحان کنید.</div>`);
+  try{
+    const res=await fetch('/api/order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const data=await res.json();
+    if(!res.ok){
+      alert(data.message || '❌ خطا در ارسال سفارش');
+    } else {
+      alert(data.message || 'سفارش ثبت شد ✅');
+      if(data.ok) e.target.reset();
+      // برگرد به صفحه شروع (اختیاری)
+      document.getElementById('orderForm').style.display='none';
+      document.getElementById('startScreen').style.display='flex';
     }
-  };
-
-  document.getElementById('cancelConfirm').onclick=closeModal;
-});
-
-function showModal(content){
-  let overlay=document.getElementById('overlay');
-  if(!overlay){
-    overlay=document.createElement('div');
-    overlay.id='overlay';
-    overlay.innerHTML=`<div class='modal'>${content}</div>`;
-    document.body.appendChild(overlay);
-  }else{
-    overlay.querySelector('.modal').innerHTML=content;
-    overlay.style.display='flex';
+  }catch(err){
+    console.error(err);
+    alert('❌ خطا در ارتباط با سرور');
   }
-  overlay.classList.add('show');
-}
-
-function closeModal(){
-  const overlay=document.getElementById('overlay');
-  if(overlay){overlay.style.display='none';}
-}
+});
 </script>
 
-<style>
-#overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);
-display:flex;align-items:center;justify-content:center;z-index:9999;backdrop-filter:blur(6px);animation:fadeIn .3s ease;}
-#overlay .modal{background:rgba(20,30,20,0.97);border-radius:16px;padding:24px;color:#d4ffe3;max-width:360px;width:90%;
-box-shadow:0 0 25px rgba(0,255,128,0.15);text-align:right;line-height:1.6;}
-.confirm-box h3{color:#80ffd4;text-align:center;margin-bottom:10px}
-.confirm-actions{display:flex;gap:10px;margin-top:16px;justify-content:center}
-.success-box,.error-box{text-align:center;font-weight:600;padding:20px;border-radius:12px;line-height:1.8;}
-.success-box{background:rgba(0,255,128,0.1);color:#b2ffca}
-.error-box{background:rgba(255,50,50,0.1);color:#ffb2b2}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
-</style>
-
-</body>
-</html>
