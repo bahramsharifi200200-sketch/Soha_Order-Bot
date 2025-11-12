@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>فرم ثبت سفارش محصولات طبیعی سها</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Vazirmatn',sans-serif}
+html,body{height:100%;background:#000;color:#eaeaea;-webkit-font-smoothing:antialiased}
+/* استایل‌ها خلاصه‌شده */
+.start-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:radial-gradient(circle at center,#001a12,#000)}
+.btn{display:block;width:100%;padding:14px;border-radius:12px;border:0;font-weight:700;margin-top:14px;font-size:1.02rem;cursor:pointer;transition:0.3s}
+.btn-primary{background:linear-gradient(135deg,#00e676,#00c853);color:#06120b}
+.btn:hover{opacity:0.9}
+.summary-container,.result-message{display:none;align-items:center;justify-content:center;min-height:100vh;background:radial-gradient(circle at center,#001a12,#000);color:#fff}
+.summary-card{max-width:600px;width:100%;background:rgba(12,25,18,0.95);border-radius:20px;padding:28px;box-shadow:0 0 40px rgba(0,255,128,0.08)}
+.summary-content{background:rgba(255,255,255,0.05);border-radius:14px;padding:18px;line-height:1.7}
+.success{color:#9effb6;} .error{color:#ff9e9e;}
+</style>
+</head>
+<body>
+<div class="start-screen" id="startScreen">
+  <h1>به دنیای محصولات طبیعی سها خوش آمدید 🌿</h1>
+  <button class="btn btn-primary" onclick="showForm()">شروع ثبت سفارش</button>
+</div>
+
+<div id="orderForm" style="display:none;max-width:600px;margin:auto;padding:20px;">
+  <form id="mainForm">
+    <label>👤 نام</label><input id="name" type="text" style="width:100%;padding:8px">
+    <label>📱 تلفن</label><input id="phone" type="text" style="width:100%;padding:8px">
+    <label>🏠 آدرس</label><textarea id="address" style="width:100%;padding:8px"></textarea>
+    <label>✉️ کد پستی</label><input id="postalCode" type="text" style="width:100%;padding:8px">
+    <label>📝 توضیحات</label><textarea id="notes" style="width:100%;padding:8px"></textarea>
+    <button class="btn btn-primary" type="submit">📦 ادامه</button>
+  </form>
+</div>
+
+<div class="summary-container" id="summaryContainer">
+  <div class="summary-card">
+    <h2>🧾 خلاصه سفارش شما</h2>
+    <div id="summaryContent" class="summary-content"></div>
+    <button class="btn btn-primary" id="confirmOrder">تأیید و ارسال ✅</button>
+    <button class="btn" id="editOrder">ویرایش 🖋</button>
+  </div>
+</div>
+
+<div class="result-message" id="resultMessage">
+  <div id="messageBox"></div>
+  <button class="btn" onclick="goHome()">بازگشت 🏡</button>
+</div>
+
+<script>
+function showForm(){document.getElementById('startScreen').style.display='none';document.getElementById('orderForm').style.display='block';}
+document.getElementById('mainForm').addEventListener('submit',(e)=>{
+e.preventDefault();
+const name=document.getElementById('name').value.trim();
+const phone=document.getElementById('phone').value.trim();
+const address=document.getElementById('address').value.trim();
+const postal=document.getElementById('postalCode').value.trim();
+const notes=document.getElementById('notes').value.trim();
+let summary=`<p><strong>👤 نام:</strong> ${name}</p><p><strong>📱 تلفن:</strong> ${phone}</p><p><strong>🏠 آدرس:</strong> ${address}</p><p><strong>📮 کد پستی:</strong> ${postal}</p><p><strong>📝 توضیحات:</strong> ${notes}</p>`;
+document.getElementById('summaryContent').innerHTML=summary;
+document.getElementById('orderForm').style.display='none';
+document.getElementById('summaryContainer').style.display='flex';
+});
+document.getElementById('editOrder').onclick=()=>{document.getElementById('summaryContainer').style.display='none';document.getElementById('orderForm').style.display='block';}
+document.getElementById('confirmOrder').onclick=()=>{
+document.getElementById('summaryContainer').style.display='none';
+document.getElementById('resultMessage').style.display='flex';
+document.getElementById('messageBox').innerHTML='<div class="success">✅ سفارش با موفقیت ارسال شد!</div>';
+}
+function goHome(){document.getElementById('resultMessage').style.display='none';document.getElementById('startScreen').style.display='flex';}
+</script>
+</body>
+</html>
