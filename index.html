@@ -246,6 +246,8 @@ document.getElementById('mainForm').addEventListener('submit',(e)=>{
     return {title,quantity:qty,choice:checked?checked.dataset.choice:null};
   }).filter(p=>p.quantity>0);
 
+  const choiceMap = { carton: 'کارتن', pack: 'بسته', null: '---' };
+
   let summaryHTML=`
   <p><strong>👤 نام:</strong> ${name||'---'}</p>
   <p><strong>📱 تلفن:</strong> ${phone||'---'}</p>
@@ -254,7 +256,7 @@ document.getElementById('mainForm').addEventListener('submit',(e)=>{
   <hr style="border-color:rgba(0,255,128,0.2);margin:12px 0;">
   <p><strong>🛍 اقلام سفارش:</strong></p>
   <ul style="margin-right:20px;">`+
-  (products.length?products.map(p=>`<li>${p.title} - تعداد: ${p.quantity} (${p.choice||'---'})</li>`).join(''):'<li>هیچ موردی انتخاب نشده</li>')+
+  (products.length?products.map(p=>`<li>${p.title} - تعداد: ${p.quantity} (${choiceMap[p.choice] || '---'})</li>`).join(''):'<li>هیچ موردی انتخاب نشده</li>')+
   `</ul><p><strong>📝 توضیحات:</strong> ${notes||'---'}</p>`;
 
   document.getElementById('summaryContent').innerHTML=summaryHTML;
