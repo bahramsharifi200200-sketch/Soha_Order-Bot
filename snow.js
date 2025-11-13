@@ -1,9 +1,9 @@
-// ❄️ snow.js - ایجاد حالت برف نرم و طبیعی فقط برای صفحه اول
+// ❄️ snow.js — حالت برف درخشان و طبیعی برای صفحه اول (startScreen)
 
 document.addEventListener("DOMContentLoaded", () => {
   const startScreen = document.getElementById("startScreen");
 
-  // ایجاد بوم (canvas) برای برف
+  // ایجاد canvas برای نمایش برف
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
   canvas.style.position = "absolute";
@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
   canvas.style.left = 0;
   canvas.style.width = "100%";
   canvas.style.height = "100%";
-  canvas.style.pointerEvents = "none"; // جلوگیری از تداخل با دکمه‌ها
+  canvas.style.pointerEvents = "none"; // تا با دکمه‌ها تداخلی نداشته باشد
   canvas.style.zIndex = 1; // زیر نوشته‌ها و دکمه‌ها
   startScreen.appendChild(canvas);
 
@@ -23,9 +23,10 @@ document.addEventListener("DOMContentLoaded", () => {
   resizeCanvas();
   window.addEventListener("resize", resizeCanvas);
 
-  // ❄️ تولید دانه‌های برف
+  // تنظیمات برف
   const snowflakes = [];
-  const numFlakes = 70; // تعداد دانه‌ها
+  const numFlakes = 90; // تعداد دانه‌ها
+  const colors = ["#ffffff", "#e0f7ff", "#b3ecff"]; // طیف رنگی سفید تا آبی ملایم
 
   for (let i = 0; i < numFlakes; i++) {
     snowflakes.push({
@@ -33,47 +34,63 @@ document.addEventListener("DOMContentLoaded", () => {
       y: Math.random() * canvas.height,
       r: Math.random() * 3 + 1, // اندازه دانه
       d: Math.random() * numFlakes, // چگالی
+      color: colors[Math.floor(Math.random() * colors.length)],
+      opacity: Math.random() * 0.5 + 0.5,
+      speed: Math.random() * 1 + 0.5,
     });
   }
 
   let angle = 0;
 
+  // ترسیم دانه‌های برف
   function drawSnow() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
-    ctx.beginPath();
+    ctx.shadowBlur = 8; // ایجاد درخشش
+    ctx.shadowColor = "rgba(255,255,255,0.9)";
+
     for (let i = 0; i < numFlakes; i++) {
       const flake = snowflakes[i];
-      ctx.moveTo(flake.x, flake.y);
-      ctx.arc(flake.x, flake.y, flake.r, 0, Math.PI * 2, true);
+      ctx.beginPath();
+      ctx.arc(flake.x, flake.y, flake.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${hexToRgb(flake.color)},${flake.opacity})`;
+      ctx.fill();
     }
-    ctx.fill();
     updateSnow();
   }
 
+  // حرکت برف‌ها
   function updateSnow() {
     angle += 0.01;
-    for (let i = 0; i < numFlakes; i++) {
+    for (let i = 0; i < snowflakes.length; i++) {
       const flake = snowflakes[i];
-      flake.y += Math.cos(angle + flake.d) + 1 + flake.r / 2;
-      flake.x += Math.sin(angle) * 0.5;
+      flake.y += Math.cos(angle + flake.d) + flake.speed;
+      flake.x += Math.sin(angle) * 0.4;
 
-      // اگر برف از پایین رفت، دوباره از بالا ظاهر شود
+      // بازگرداندن دانه‌ها به بالا پس از خروج از پایین
       if (flake.y > canvas.height) {
         snowflakes[i] = {
+          ...flake,
           x: Math.random() * canvas.width,
           y: 0,
-          r: flake.r,
-          d: flake.d,
         };
       }
     }
   }
 
-  // اجرای انیمیشن
+  // انیمیشن
   function animateSnow() {
     drawSnow();
     requestAnimationFrame(animateSnow);
   }
   animateSnow();
+
+  // تبدیل رنگ hex به RGB
+  function hexToRgb(hex) {
+    const c = hex.replace("#", "");
+    const bigint = parseInt(c, 16);
+    const r = (bigint >> 16) & 255;
+    const g = (bigint >> 8) & 255;
+    const b = bigint & 255;
+    return `${r},${g},${b}`;
+  }
 });
